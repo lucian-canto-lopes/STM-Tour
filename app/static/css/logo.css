@@ -1,0 +1,13 @@
+.logo {
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.auth .logo {
+  width: 92px;
+  height: 92px;
+  margin: 22px auto 8px;
+}
