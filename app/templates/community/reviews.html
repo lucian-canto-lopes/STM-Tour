@@ -1,0 +1,12 @@
+{% extends 'admin/base.html' if moderation else 'community/base.html' %}
+{% block content %}
+<a class="back" href="{{ url_for('admin.index') if moderation else url_for('community.places') }}">← Voltar</a>
+<div class="heading"><h1>{{ 'Revisar contribuições' if moderation else 'Minhas contribuições' }}</h1></div>
+<div class="grid">{% for item in items %}<article class="panel">
+<h2>{{ item.name }}</h2><p>{{ {'new': 'Novo ponto', 'photo': 'Nova foto', 'description': 'Descrição sugerida'}[item.kind] }} · <strong>{{ {'pending': 'Aguardando aprovação', 'approved': 'Aprovada', 'rejected': 'Rejeitada'}[item.status] }}</strong></p>
+{% if moderation and item.kind == 'description' and item.current %}<h3>Descrição atual</h3><p class="description">{{ item.current.description }}</p><h3>Descrição sugerida</h3>{% endif %}
+{% if item.latitude is defined %}<p>Localização: {{ item.latitude }}, {{ item.longitude }}</p>{% endif %}{% if item.description %}<p class="description">{{ item.description }}</p>{% endif %}
+{% if item.kind in ['new', 'photo'] %}<img class="preview" src="{{ url_for('community.contribution_photo', contribution_id=item._id) }}" alt="Foto enviada para {{ item.name }}" loading="lazy">{% endif %}
+{% if moderation %}<form method="post" action="{{ url_for('community.review', contribution_id=item._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="actions"><button name="decision" value="approved">Aprovar e publicar</button><button class="danger-outline" name="decision" value="rejected">Rejeitar</button></div></form>{% endif %}
+</article>{% else %}<p>{{ 'Nenhuma contribuição pendente.' if moderation else 'Você ainda não enviou contribuições.' }}</p>{% endfor %}</div>
+{% endblock %}

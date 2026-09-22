@@ -90,3 +90,6 @@ small { color: #52695d; line-height: 1.5; }
 .empty { padding: 32px 20px; text-align: center; }
 .empty .button { width: 100%; }
 :focus-visible { outline: 3px solid #d29016; outline-offset: 3px; }
+select { width: 100%; padding: 12px; border: 1px solid #cad5d1; border-radius: 8px; background: white; font: inherit; }
+.location-picker { display: grid; gap: 10px; min-width: 0; margin: 16px 0; padding: 12px; border: 1px solid #cad5d1; border-radius: 8px; }
+.location-picker legend { font-weight: bold; }

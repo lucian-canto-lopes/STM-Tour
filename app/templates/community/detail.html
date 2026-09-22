@@ -1,0 +1,5 @@
+{% extends 'community/base.html' %}{% block content %}
+<a class="back" href="{{ url_for('community.places') }}">← Pontos turísticos</a>
+<section class="panel"><h1>{{ place.name }}</h1><img class="preview" src="{{ url_for('community.place_photo', place_id=place._id) }}" alt="{{ place.name }}"><h2>Sobre o local</h2><p class="description">{{ place.description }}</p><a class="button" href="{{ url_for('community.submit', place_id=place._id) }}">Enviar foto ou sugerir descrição</a></section>
+<h2>Fotos da comunidade</h2>{% for photo in photos %}<img class="preview" src="{{ url_for('community.contribution_photo', contribution_id=photo._id) }}" alt="Foto de {{ place.name }} enviada pela comunidade" loading="lazy">{% else %}<p>Nenhuma foto da comunidade aprovada ainda.</p>{% endfor %}
+{% endblock %}

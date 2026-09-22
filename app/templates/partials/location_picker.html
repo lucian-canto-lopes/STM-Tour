@@ -1,0 +1,11 @@
+<fieldset class="location-picker">
+  <legend>Localização do ponto</legend>
+  <label for="location-mode">Como deseja informar a localização?</label>
+  <select id="location-mode"><option value="coordinates">Digitar coordenadas</option><option value="map">Escolher no mapa</option></select>
+  <label for="latitude">Latitude</label><input id="latitude" name="latitude" inputmode="decimal" placeholder="Ex.: -2.4431" value="{{ values.get('latitude', '') }}" {{ 'required' if not place or place.get('latitude') is not none }}>
+  <label for="longitude">Longitude</label><input id="longitude" name="longitude" inputmode="decimal" placeholder="Ex.: -54.7083" value="{{ values.get('longitude', '') }}" {{ 'required' if not place or place.get('latitude') is not none }}>
+  <small>Use graus decimais. No mapa, clique no local ou arraste o pin para ajustar. As coordenadas serão preenchidas automaticamente.</small>
+  <div id="location-map-container" hidden><iframe id="location-map" data-src="{{ url_for('main.location_picker') }}" title="Escolher localização do ponto turístico" style="width:100%;height:320px;border:0"></iframe></div>
+  <p id="location-status" role="status"></p>
+</fieldset>
+<script src="{{ url_for('static', filename='js/location-picker.js') }}" defer></script>

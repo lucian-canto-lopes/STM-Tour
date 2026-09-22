@@ -1,0 +1,4 @@
+{% extends 'community/base.html' %}{% block content %}
+<div class="heading"><h1>Pontos turísticos</h1><a class="button" href="{{ url_for('community.submit') }}">Sugerir novo ponto</a><a href="{{ url_for('community.mine') }}">Minhas contribuições</a></div>
+<div class="grid">{% for place in places %}<article class="panel"><h2><a href="{{ url_for('community.detail', place_id=place._id) }}">{{ place.name }}</a></h2><a class="button secondary" href="{{ url_for('community.detail', place_id=place._id) }}">Conhecer e contribuir</a></article>{% else %}<p>Nenhum ponto publicado ainda. Envie uma sugestão para avaliação.</p>{% endfor %}</div>
+{% endblock %}

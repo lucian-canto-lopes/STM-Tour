@@ -50,7 +50,7 @@ def test_access_and_csrf(client):
 
 def test_place_lifecycle(client):
     login(client)
-    assert post(client, '/admin/locais/novo', name='Praia', description='Descrição', photo=photo()).status_code == 302
+    assert post(client, '/admin/locais/novo', name='Praia', description='Descrição', latitude='-2.44', longitude='-54.70', photo=photo()).status_code == 302
     collection = client.application.extensions['mongo_db'].places
     place = collection.find_one()
     path = '/admin/locais/' + str(place['_id'])
@@ -58,10 +58,10 @@ def test_place_lifecycle(client):
     response = client.get(path + '/foto')
     assert response.mimetype == 'image/jpeg'
     assert client.get(path + '/editar').status_code == 200
-    assert post(client, path + '/editar', name='Novo nome', description='<script>alert(1)</script>').status_code == 302
+    assert post(client, path + '/editar', name='Novo nome', latitude='-2.44', longitude='-54.70', description='<script>alert(1)</script>').status_code == 302
     assert collection.find_one()['photo'] == place['photo']
     assert b'&lt;script&gt;' in client.get('/admin/').data
-    assert post(client, path + '/editar', name='Novo nome', description='Nova descrição', photo=photo('red')).status_code == 302
+    assert post(client, path + '/editar', name='Novo nome', latitude='-2.44', longitude='-54.70', description='Nova descrição', photo=photo('red')).status_code == 302
     assert collection.find_one()['photo'] != place['photo']
     assert client.get(path + '/remover').status_code == 200
     assert collection.count_documents({}) == 1

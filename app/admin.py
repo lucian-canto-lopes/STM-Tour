@@ -10,6 +10,7 @@ from PIL import Image, UnidentifiedImageError
 from pymongo.errors import PyMongoError
 from werkzeug.security import generate_password_hash
 from app.auth import current_user, is_admin
+from app.location import coordinates
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -137,6 +138,7 @@ def edit(place_id=None):
             if not description or len(description) > 5000:
                 raise ValueError('Informe uma descrição com até 5.000 caracteres.')
             data = {'name': name, 'description': description}
+            data.update(coordinates(request.form, required=not place or 'latitude' in (place or {})))
             upload = request.files.get('photo')
             if upload and upload.filename:
                 data['photo'] = read_photo(upload)
