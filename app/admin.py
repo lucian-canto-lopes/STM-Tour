@@ -8,7 +8,8 @@ from bson import ObjectId
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_file, session, url_for
 from PIL import Image, UnidentifiedImageError
 from pymongo.errors import PyMongoError
-from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.security import generate_password_hash
+from app.auth import current_user, is_admin
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -37,11 +38,12 @@ def protect_forms():
 def login_required(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if not session.get('admin_id'):
-            return redirect(url_for('admin.login'))
-        if not db().admins.find_one({'_id': ObjectId(session['admin_id'])}):
+        user = current_user()
+        if not user:
             session.clear()
-            return redirect(url_for('admin.login'))
+            return redirect(url_for('main.login'))
+        if not is_admin(user):
+            abort(403)
         return view(*args, **kwargs)
     return wrapped
 
@@ -58,24 +60,13 @@ def upload_error(error):
 
 @admin.route('/entrar', methods=['GET', 'POST'])
 def login():
-    if session.get('admin_id'):
-        return redirect(url_for('admin.index'))
-    if request.method == 'POST':
-        user = db().admins.find_one({'email': request.form.get('email', '').strip().lower()})
-        if user and check_password_hash(user['password_hash'], request.form.get('password', '')):
-            session.clear()
-            session['admin_id'] = str(user['_id'])
-            session.permanent = True
-            return redirect(url_for('admin.index'))
-        flash('E-mail ou senha inválidos.', 'error')
-        return render_template('admin/login.html'), 401
-    return render_template('admin/login.html')
+    return redirect(url_for('main.login'), code=307 if request.method == 'POST' else 302)
 
 
 @admin.post('/sair')
 def logout():
     session.clear()
-    return redirect(url_for('admin.login'))
+    return redirect(url_for('main.login'))
 
 
 @admin.get('/')
@@ -172,9 +163,9 @@ def init_admin(app):
         email = email.strip().lower()
         if '@' not in email or len(password) < 12:
             raise click.ClickException('Informe um e-mail válido e uma senha com pelo menos 12 caracteres.')
-        collection = db().admins
+        collection = db().users
         collection.create_index('email', unique=True)
-        if collection.find_one({'email': email}):
-            raise click.ClickException('Já existe um administrador com esse e-mail.')
-        collection.insert_one({'email': email, 'password_hash': generate_password_hash(password)})
+        if collection.find_one({'email': email}) or db().admins.find_one({'email': email}):
+            raise click.ClickException('Já existe uma conta com esse e-mail.')
+        collection.insert_one({'name': email, 'email': email, 'password_hash': generate_password_hash(password), 'role': 'admin'})
         click.echo('Administrador criado com sucesso.')

@@ -22,8 +22,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE}
-    ports:
-      - "27017:27017"
+    # O Flask acessa mongo:27017 pela rede interna do Compose.
+    # Não publica a porta do banco no host, evitando conflitos com outro MongoDB.
     volumes:
       - mongo_data:/data/db
     healthcheck:

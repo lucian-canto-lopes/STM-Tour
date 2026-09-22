@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, jsonify, redirect, render_template, ur
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.admin import protect_forms
+from app.auth import current_user, is_admin
 
 main = Blueprint("main", __name__)
 
@@ -38,15 +39,22 @@ def database_error(error):
 
 @main.route("/entrar", methods=["GET", "POST"])
 def login():
-    if session.get("user_id"):
-        return redirect(url_for("main.map_view"))
+    account = current_user()
+    if account:
+        return redirect(url_for("admin.index" if is_admin(account) else "main.map_view"))
     if request.method == "POST":
-        user = current_app.extensions["mongo_db"].users.find_one({"email": request.form.get("email", "").strip().lower()})
+        database = current_app.extensions["mongo_db"]
+        email = request.form.get("email", "").strip().lower()
+        source = "users"
+        user = database.users.find_one({"email": email})
+        if user is None:
+            source = "admins"
+            user = database.admins.find_one({"email": email})
         if user and check_password_hash(user["password_hash"], request.form.get("password", "")):
             session.clear()
-            session.update(user_id=str(user["_id"]), user_name=user["name"])
+            session.update(user_id=str(user["_id"]), user_name=user.get("name") or user["email"], account_source=source)
             session.permanent = True
-            return redirect(url_for("main.map_view"))
+            return redirect(url_for("admin.index" if source == "admins" or is_admin(user) else "main.map_view"))
         return render_template("user_auth.html", register=False, error="E-mail ou senha inválidos."), 401
     return render_template("user_auth.html", register=False)
 
@@ -62,9 +70,11 @@ def register():
         if password != request.form.get("confirmation"):
             return render_template("user_auth.html", register=True, error="As senhas não coincidem."), 400
         users = current_app.extensions["mongo_db"].users
+        if current_app.extensions["mongo_db"].admins.find_one({"email": email}):
+            return render_template("user_auth.html", register=True, error="Já existe uma conta com esse e-mail."), 400
         users.create_index("email", unique=True)
         try:
-            users.insert_one({"name": name, "email": email, "password_hash": generate_password_hash(password)})
+            users.insert_one({"name": name, "email": email, "password_hash": generate_password_hash(password), "role": "user"})
         except DuplicateKeyError:
             return render_template("user_auth.html", register=True, error="Já existe uma conta com esse e-mail."), 400
         flash("Conta criada. Entre com seu e-mail e senha.")
@@ -90,7 +100,7 @@ def place():
 
 @main.get("/perfil")
 def profile():
-    return render_template("index.html", screen="profile")
+    return render_template("index.html", screen="profile", can_admin=is_admin(current_user()))
 
 
 @main.get("/health")
