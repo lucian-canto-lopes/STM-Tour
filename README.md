@@ -12,6 +12,8 @@ A página `/mapa`, aberta após o login do usuário, exibe um mapa interativo de
 
 O painel permite listar, cadastrar, editar e remover locais com nome, descrição e foto. As fotos são validadas e armazenadas no MongoDB junto ao local; são aceitos JPG, PNG e WebP de até 5 MB e 20 megapixels. Ao editar, é possível manter a foto atual. A remoção exige confirmação. As sessões expiram após oito horas; sem `SECRET_KEY` configurada, uma chave temporária é gerada a cada inicialização.
 
+Para promover uma conta existente, abra **Gerenciar usuários** no painel e clique em **Tornar administrador** na conta desejada. Apenas administradores podem conceder essa permissão. O usuário promovido pode atualizar o perfil e clicar em **Painel administrativo**, sem sair da conta; nos próximos logins, será direcionado ao painel.
+
 Os locais cadastrados são exibidos no painel administrativo. As telas públicas de mapa e local continuam com os exemplos existentes.
 
 ### Testes
@@ -20,7 +22,7 @@ Instale `requirements-dev.txt` em um ambiente Python e execute `python -m pytest
 
 ## Acesso do usuário
 
-Na página inicial, **Entrar** abre `/entrar`, e **Criar conta** abre `/criar-conta`. O cadastro exige senha de pelo menos 4 caracteres e a armazena como hash no MongoDB. Após autenticação, o usuário é direcionado ao mapa. Contas de usuários não permitem acessar o painel administrativo. O perfil oferece a opção de sair da conta.
+Na página inicial, **Entrar** abre `/entrar`, e **Criar conta** abre `/criar-conta`. O cadastro exige senha de pelo menos 4 caracteres e a armazena como hash no MongoDB. Após autenticação, o usuário é direcionado ao mapa. Contas de usuários comuns só podem acessar o painel após receberem a permissão de administrador. O perfil oferece a opção de sair da conta.
 
 O login é único para todas as contas. Novas contas ficam na coleção `users`, com `role: user` no cadastro público e `role: admin` pelo comando `create-admin`. O servidor consulta a permissão no banco em cada acesso ao painel; usuários sem essa permissão recebem HTTP 403. Administradores também encontram o link **Painel administrativo** no perfil.
 

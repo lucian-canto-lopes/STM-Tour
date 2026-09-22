@@ -75,6 +75,25 @@ def index():
     return render_template('admin/index.html', places=list(db().places.find({}, {'photo': 0}).sort('_id', -1)))
 
 
+@admin.get('/usuarios')
+@login_required
+def users():
+    accounts = list(db().users.find({}, {'name': 1, 'email': 1, 'role': 1}).sort('email', 1))
+    return render_template('admin/users.html', users=accounts)
+
+
+@admin.post('/usuarios/<user_id>/promover')
+@login_required
+def promote_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        abort(404)
+    result = db().users.update_one({'_id': ObjectId(user_id)}, {'$set': {'role': 'admin'}})
+    if not result.matched_count:
+        abort(404)
+    flash('Permissão de administrador concedida.' if result.modified_count else 'Esta conta já é administradora.', 'success')
+    return redirect(url_for('admin.users'))
+
+
 def get_place(place_id, projection=None):
     if not ObjectId.is_valid(place_id):
         abort(404)
