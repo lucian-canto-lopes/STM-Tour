@@ -21,7 +21,7 @@ def map_embed():
     city_map = folium.Map(
         location=[-2.4431, -54.7083],
         zoom_start=13,
-        tiles="OpenStreetMap",
+        tiles="OPNVKarte",
         control_scale=True,
         zoom_control=True,
         scrollWheelZoom=False,
@@ -46,7 +46,7 @@ def map_embed():
 
 @main.get("/mapa/selecionar")
 def location_picker():
-    picker = folium.Map(location=[-2.4431, -54.7083], zoom_start=13, tiles="OpenStreetMap")
+    picker = folium.Map(location=[-2.4431, -54.7083], zoom_start=13, tiles="OPNVKarte")
     handler = MacroElement()
     handler._template = Template("""
         {% macro script(this, kwargs) %}
