@@ -15,6 +15,11 @@ community = Blueprint('community', __name__)
 community.before_request(protect_forms)
 
 
+@community.app_context_processor
+def template_helpers():
+    return {'current_user': current_user}
+
+
 def signed_in(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -27,6 +32,24 @@ def signed_in(view):
 def identity():
     from flask import session
     return {'author_id': current_user()['_id'], 'author_source': session.get('account_source', 'users')}
+
+
+def favorite_identity():
+    from flask import session
+    return {'user_id': current_user()['_id'], 'user_source': session.get('account_source', 'users')}
+
+
+def favorite_collection():
+    collection = db().favorites
+    collection.create_index(
+        [('user_id', 1), ('user_source', 1), ('place_id', 1)],
+        unique=True,
+    )
+    return collection
+
+
+def favorite_ids():
+    return {item['place_id'] for item in favorite_collection().find(favorite_identity(), {'place_id': 1})}
 
 
 def object_id(value):
@@ -66,13 +89,52 @@ def upload_error(error):
 
 @community.get('/locais')
 def places():
-    return render_template('community/places.html', places=public_places())
+    favorites = favorite_ids() if current_user() else set()
+    places = public_places()
+    for place in places:
+        place['is_favorite'] = place['_id'] in favorites
+    return render_template('community/places.html', places=places)
+
+
+@community.get('/favoritos')
+@signed_in
+def favorites():
+    saved = list(favorite_collection().find(favorite_identity(), {'place_id': 1}).sort('created_at', -1))
+    public = {str(place['_id']): place for place in public_places()}
+    places = [public[str(item['place_id'])] for item in saved if str(item['place_id']) in public]
+    for place in places:
+        place['is_favorite'] = True
+    return render_template('community/favorites.html', places=places)
+
+
+@community.post('/locais/<place_id>/favoritar')
+@signed_in
+def toggle_favorite(place_id):
+    place = public_place(place_id)
+    target = {**favorite_identity(), 'place_id': place['_id']}
+    favorites = favorite_collection()
+    if favorites.find_one(target):
+        favorites.delete_one(target)
+        flash('Local removido dos favoritos.')
+    else:
+        from datetime import datetime, timezone
+        favorites.insert_one({**target, 'created_at': datetime.now(timezone.utc)})
+        flash('Local adicionado aos favoritos.')
+    return_to = request.form.get('return_to')
+    if return_to == 'favorites':
+        destination = url_for('community.favorites')
+    elif return_to == 'places':
+        destination = url_for('community.places')
+    else:
+        destination = url_for('community.detail', place_id=place_id)
+    return redirect(destination)
 
 
 @community.get('/locais/<place_id>')
 def detail(place_id):
     place = public_place(place_id)
     photos = list(db().contributions.find({'place_id': place['_id'], 'kind': 'photo', 'status': 'approved'}, {'photo': 0}))
+    place['is_favorite'] = bool(current_user() and place['_id'] in favorite_ids())
     return render_template('community/detail.html', place=place, photos=photos)
 
 

@@ -90,3 +90,21 @@ def test_invalid_submissions_and_missing_targets(client):
     assert client.get('/admin/contribuicoes').status_code == 200
     assert post(client, f"/admin/contribuicoes/{item['_id']}/revisar", decision='approved').status_code == 404
     assert post(client, f"/admin/contribuicoes/{item['_id']}/revisar", decision='rejected').status_code == 302
+
+
+
+def test_favorites_are_private_and_toggle(client):
+    database = client.application.extensions['mongo_db']
+    place_id = database.places.insert_one({'name': 'Praia favorita', 'description': 'Lugar para voltar', 'photo': b'photo'}).inserted_id
+    user = member(client)
+    other = member(client, 'other@example.com')
+
+    assert user.get('/favoritos').status_code == 200
+    assert 'Praia favorita' not in user.get('/favoritos').text
+    assert post(user, f'/locais/{place_id}/favoritar', return_to='places').location == '/locais'
+    assert database.favorites.count_documents({'place_id': place_id}) == 1
+    assert 'Praia favorita' in user.get('/favoritos').text
+    assert 'Praia favorita' not in other.get('/favoritos').text
+
+    assert post(user, f'/locais/{place_id}/favoritar', return_to='favorites').location == '/favoritos'
+    assert database.favorites.count_documents({'place_id': place_id}) == 0
