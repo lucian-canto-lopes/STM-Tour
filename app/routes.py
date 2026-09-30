@@ -24,7 +24,7 @@ def map_embed():
         tiles="OPNVKarte",
         control_scale=True,
         zoom_control=True,
-        scrollWheelZoom=False,
+        scrollWheelZoom=True,
     )
     from app.contributions import public_places, public_place
     bounds = []
