@@ -10,6 +10,8 @@ from PIL import Image, UnidentifiedImageError
 from pymongo.errors import PyMongoError
 from werkzeug.security import generate_password_hash
 from app.auth import current_user, is_admin
+from app.location import coordinates
+from app.place_filters import CATEGORIES, read_category, category_of
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -26,7 +28,7 @@ def csrf_token():
 
 @admin.app_context_processor
 def helpers():
-    return {'csrf_token': csrf_token}
+    return {'csrf_token': csrf_token, 'place_categories': CATEGORIES, 'place_category': category_of}
 
 
 @admin.before_request
@@ -75,6 +77,25 @@ def index():
     return render_template('admin/index.html', places=list(db().places.find({}, {'photo': 0}).sort('_id', -1)))
 
 
+@admin.get('/usuarios')
+@login_required
+def users():
+    accounts = list(db().users.find({}, {'name': 1, 'email': 1, 'role': 1}).sort('email', 1))
+    return render_template('admin/users.html', users=accounts)
+
+
+@admin.post('/usuarios/<user_id>/promover')
+@login_required
+def promote_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        abort(404)
+    result = db().users.update_one({'_id': ObjectId(user_id)}, {'$set': {'role': 'admin'}})
+    if not result.matched_count:
+        abort(404)
+    flash('Permissão de administrador concedida.' if result.modified_count else 'Esta conta já é administradora.', 'success')
+    return redirect(url_for('admin.users'))
+
+
 def get_place(place_id, projection=None):
     if not ObjectId.is_valid(place_id):
         abort(404)
@@ -117,7 +138,8 @@ def edit(place_id=None):
                 raise ValueError('Informe um nome com até 120 caracteres.')
             if not description or len(description) > 5000:
                 raise ValueError('Informe uma descrição com até 5.000 caracteres.')
-            data = {'name': name, 'description': description}
+            data = {'name': name, 'description': description, 'category': read_category(request.form)}
+            data.update(coordinates(request.form, required=not place or 'latitude' in (place or {})))
             upload = request.files.get('photo')
             if upload and upload.filename:
                 data['photo'] = read_photo(upload)

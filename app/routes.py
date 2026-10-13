@@ -1,4 +1,7 @@
 import folium
+from branca.element import MacroElement, Template
+from app.location import coordinates
+from app.place_filters import map_places
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template, url_for, request, session, flash
 from pymongo.errors import PyMongoError, DuplicateKeyError
@@ -19,12 +22,61 @@ def map_embed():
     city_map = folium.Map(
         location=[-2.4431, -54.7083],
         zoom_start=13,
-        tiles="OpenStreetMap",
+        tiles="OPNVKarte",
         control_scale=True,
         zoom_control=True,
-        scrollWheelZoom=False,
+        scrollWheelZoom=True,
     )
+    bounds = []
+    for entry in map_places(request.args.get("q", "").strip(), request.args.get("category", "")):
+        try:
+            location = coordinates(entry)
+        except ValueError:
+            continue
+        place = entry
+        point = [location['latitude'], location['longitude']]
+        card = render_template('partials/map_card.html', place=place)
+        popup = folium.Popup(folium.IFrame(html=card, width=250, height=270), max_width=270)
+        folium.Marker(point, popup=popup).add_to(city_map)
+        bounds.append(point)
+    if bounds:
+        city_map.fit_bounds(bounds, max_zoom=15, padding=(25, 25))
     return city_map.get_root().render()
+
+
+@main.get("/mapa/selecionar")
+def location_picker():
+    picker = folium.Map(location=[-2.4431, -54.7083], zoom_start=13, tiles="OPNVKarte")
+    handler = MacroElement()
+    handler._template = Template("""
+        {% macro script(this, kwargs) %}
+        const pickerMap = {{ this._parent.get_name() }};
+        let chosenMarker;
+        function choosePoint(lat, lng, notify) {
+            if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) return;
+            if (!chosenMarker) {
+                chosenMarker = L.marker([lat, lng], {draggable: true}).addTo(pickerMap);
+                chosenMarker.on('dragend', function() {
+                    const point = chosenMarker.getLatLng().wrap();
+                    choosePoint(point.lat, point.lng, true);
+                });
+            } else chosenMarker.setLatLng([lat, lng]);
+            if (notify) window.parent.postMessage({type: 'location-selected', latitude: lat, longitude: lng}, window.location.origin);
+            else pickerMap.setView([lat, lng], 15);
+        }
+        pickerMap.on('click', function(event) {
+            const point = event.latlng.wrap();
+            choosePoint(point.lat, point.lng, true);
+        });
+        window.addEventListener('message', function(event) {
+            if (event.origin !== window.location.origin || event.source !== window.parent || event.data?.type !== 'location-set') return;
+            choosePoint(event.data.latitude, event.data.longitude, false);
+        });
+        window.parent.postMessage({type: 'location-ready'}, window.location.origin);
+        {% endmacro %}
+    """)
+    picker.add_child(handler)
+    return picker.get_root().render()
 
 
 @main.before_request
@@ -90,12 +142,17 @@ def logout():
 
 @main.get("/mapa")
 def map_view():
-    return render_template("index.html", screen="map")
+    query = request.args.get("q", "").strip()
+    category = request.args.get("category", "")
+    from app.place_filters import CATEGORIES
+    if category not in CATEGORIES:
+        category = ""
+    return render_template("index.html", screen="map", query=query, category=category, result_count=len(map_places(query, category)))
 
 
 @main.get("/local")
 def place():
-    return render_template("index.html", screen="place")
+    return redirect(url_for("community.places"))
 
 
 @main.get("/perfil")

@@ -1,0 +1,5 @@
+{% extends 'community/base.html' %}{% block content %}
+<a class="back" href="{{ url_for('community.places') }}">← Pontos turísticos</a>
+<div class="heading"><div><h1>Meus favoritos</h1><p>Locais salvos para visitar depois.</p></div></div>
+<div class="grid">{% for place in places %}<article class="panel"><h2><a href="{{ url_for('community.detail', place_id=place._id) }}">{{ place.name }}</a></h2><p class="description">{{ place.description }}</p><div class="actions"><a class="button secondary" href="{{ url_for('community.detail', place_id=place._id) }}">Ver local</a><form class="favorite-form" method="post" action="{{ url_for('community.toggle_favorite', place_id=place._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="return_to" value="favorites"><button class="danger-outline" type="submit">Remover</button></form></div></article>{% else %}<section class="panel empty"><h2>Nenhum favorito ainda</h2><p>Salve um ponto turístico para encontrá-lo rapidamente aqui.</p><a class="button" href="{{ url_for('community.places') }}">Explorar locais</a></section>{% endfor %}</div>
+{% endblock %}

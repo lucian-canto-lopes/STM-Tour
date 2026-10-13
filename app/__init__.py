@@ -32,6 +32,9 @@ def create_app() -> Flask:
     from app.admin import init_admin
     init_admin(app)
 
+    from app.contributions import community
+    app.register_blueprint(community)
+
     @app.teardown_appcontext
     def close_mongo_connection(_error=None):
         # O cliente é compartilhado pelo processo e gerencia seu próprio pool.

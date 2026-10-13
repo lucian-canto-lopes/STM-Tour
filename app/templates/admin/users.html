@@ -1,0 +1,27 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+<a class="back" href="{{ url_for('admin.index') }}">← Voltar ao painel</a>
+<div class="heading">
+  <h1>Usuários</h1>
+  <p>Conceda acesso administrativo às contas cadastradas. Administradores podem gerenciar locais e conceder essa permissão a outros usuários.</p>
+</div>
+<div class="grid">
+  {% for user in users %}
+  <article class="panel">
+    <h2>{{ user.get('name') or user.email }}</h2>
+    <p>{{ user.email }}</p>
+    {% if user.get('role') == 'admin' %}
+    <strong>Administrador</strong>
+    {% else %}
+    <p>Usuário comum</p>
+    <form method="post" action="{{ url_for('admin.promote_user', user_id=user._id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" aria-label="Tornar {{ user.email }} administrador">Tornar administrador</button>
+    </form>
+    {% endif %}
+  </article>
+  {% else %}
+  <section class="panel empty"><p>Nenhum usuário cadastrado.</p></section>
+  {% endfor %}
+</div>
+{% endblock %}

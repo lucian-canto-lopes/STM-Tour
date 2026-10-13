@@ -50,7 +50,7 @@ def test_access_and_csrf(client):
 
 def test_place_lifecycle(client):
     login(client)
-    assert post(client, '/admin/locais/novo', name='Praia', description='Descrição', photo=photo()).status_code == 302
+    assert post(client, '/admin/locais/novo', name='Praia', description='Descrição', latitude='-2.44', longitude='-54.70', photo=photo()).status_code == 302
     collection = client.application.extensions['mongo_db'].places
     place = collection.find_one()
     path = '/admin/locais/' + str(place['_id'])
@@ -58,10 +58,10 @@ def test_place_lifecycle(client):
     response = client.get(path + '/foto')
     assert response.mimetype == 'image/jpeg'
     assert client.get(path + '/editar').status_code == 200
-    assert post(client, path + '/editar', name='Novo nome', description='<script>alert(1)</script>').status_code == 302
+    assert post(client, path + '/editar', name='Novo nome', latitude='-2.44', longitude='-54.70', description='<script>alert(1)</script>').status_code == 302
     assert collection.find_one()['photo'] == place['photo']
     assert b'&lt;script&gt;' in client.get('/admin/').data
-    assert post(client, path + '/editar', name='Novo nome', description='Nova descrição', photo=photo('red')).status_code == 302
+    assert post(client, path + '/editar', name='Novo nome', latitude='-2.44', longitude='-54.70', description='Nova descrição', photo=photo('red')).status_code == 302
     assert collection.find_one()['photo'] != place['photo']
     assert client.get(path + '/remover').status_code == 200
     assert collection.count_documents({}) == 1
@@ -162,3 +162,56 @@ def test_duplicate_legacy_email_does_not_grant_permissions(client):
     assert post(client, '/entrar', email='admin@example.com', password='test-password-123').status_code == 401
     assert post(client, '/entrar', email='admin@example.com', password='user-password').location == '/mapa'
     assert client.get('/admin/').status_code == 403
+
+
+@pytest.mark.parametrize('legacy_admin', [False, True])
+def test_admin_promotes_user_with_active_session(client, legacy_admin):
+    database = client.application.extensions['mongo_db']
+    if not legacy_admin:
+        database.users.insert_one({'email': 'admin@example.com', 'role': 'admin',
+            'password_hash': generate_password_hash('test-password-123')})
+    user_id = database.users.insert_one({'name': 'Maria', 'email': 'maria@example.com',
+        'password_hash': generate_password_hash('user-password')}).inserted_id
+    user_client = client.application.test_client()
+    user_client.get('/entrar')
+    assert post(user_client, '/entrar', email='maria@example.com', password='user-password').location == '/mapa'
+    assert user_client.get('/admin/').status_code == 403
+    login(client)
+    assert b'/admin/usuarios' in client.get('/admin/').data
+    listing = client.get('/admin/usuarios')
+    assert b'maria@example.com' in listing.data
+    assert b'password_hash' not in listing.data
+    path = f'/admin/usuarios/{user_id}/promover'
+    assert post(client, path).location == '/admin/usuarios'
+    assert database.users.find_one({'_id': user_id})['role'] == 'admin'
+    assert b'Painel administrativo' in user_client.get('/perfil').data
+    assert user_client.get('/admin/').status_code == 200
+    assert user_client.get('/admin/usuarios').status_code == 200
+    assert path.encode() not in client.get('/admin/usuarios').data
+    assert post(client, path).status_code == 302
+    assert post(user_client, '/sair').status_code == 302
+    user_client.get('/entrar')
+    assert post(user_client, '/entrar', email='maria@example.com', password='user-password').location == '/admin/'
+
+
+def test_promotion_requires_admin_and_csrf(client):
+    database = client.application.extensions['mongo_db']
+    user_id = database.users.insert_one({'name': 'Pessoa', 'email': 'person@example.com',
+        'password_hash': generate_password_hash('password'), 'role': 'user'}).inserted_id
+    path = f'/admin/usuarios/{user_id}/promover'
+    client.get('/entrar')
+    assert post(client, path).location == '/entrar'
+    assert client.get('/admin/usuarios').location == '/entrar'
+    client.get('/entrar')
+    post(client, '/entrar', email='person@example.com', password='password')
+    client.get('/perfil')
+    assert client.get('/admin/usuarios').status_code == 403
+    assert post(client, path).status_code == 403
+    assert database.users.find_one({'_id': user_id})['role'] == 'user'
+    post(client, '/sair')
+    login(client)
+    assert client.post(path).status_code == 400
+    assert client.get(path).status_code == 405
+    assert database.users.find_one({'_id': user_id})['role'] == 'user'
+    assert post(client, '/admin/usuarios/invalid/promover').status_code == 404
+    assert post(client, '/admin/usuarios/000000000000000000000000/promover').status_code == 404
