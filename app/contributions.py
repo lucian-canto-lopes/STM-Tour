@@ -131,12 +131,48 @@ def toggle_favorite(place_id):
     return redirect(destination)
 
 
+def render_detail(place, error=None, values=None, photo_error=None):
+    photos = list(db().contributions.find({'place_id': place['_id'], 'kind': 'photo', 'status': 'approved'}, {'photo': 0}))
+    user = current_user()
+    place['is_favorite'] = bool(user and place['_id'] in favorite_ids())
+    reviews = list(db().place_reviews.find({'place_id': place['_id']}).sort('updated_at', -1))
+    own_review = next((item for item in reviews if user and
+                       item.get('author_id') == user['_id'] and
+                       item.get('author_source') == identity()['author_source']), None)
+    average = round(sum(item['rating'] for item in reviews) / len(reviews), 1) if reviews else None
+    return render_template('community/detail.html', place=place, photos=photos,
+                           reviews=reviews, average=average, own_review=own_review,
+                           review_values=values if values is not None else (own_review or {}),
+                           review_error=error, photo_error=photo_error), 400 if error or photo_error else 200
+
+
 @community.get('/locais/<place_id>')
 def detail(place_id):
+    return render_detail(public_place(place_id))
+
+
+@community.post('/locais/<place_id>/avaliar')
+@signed_in
+def rate_place(place_id):
     place = public_place(place_id)
-    photos = list(db().contributions.find({'place_id': place['_id'], 'kind': 'photo', 'status': 'approved'}, {'photo': 0}))
-    place['is_favorite'] = bool(current_user() and place['_id'] in favorite_ids())
-    return render_template('community/detail.html', place=place, photos=photos)
+    try:
+        rating = int(request.form.get('rating', ''))
+        if rating not in range(1, 6):
+            raise ValueError
+    except ValueError:
+        return render_detail(place, 'Escolha uma avaliação de 1 a 5 estrelas.', request.form)
+    comment = request.form.get('comment', '').strip()
+    if len(comment) > 2000:
+        return render_detail(place, 'O comentário deve ter até 2.000 caracteres.', request.form)
+    collection = db().place_reviews
+    collection.create_index([('place_id', 1), ('author_id', 1), ('author_source', 1)], unique=True)
+    collection.update_one({'place_id': place['_id'], **identity()}, {'$set': {
+        'rating': rating, 'comment': comment,
+        'author_name': current_user().get('name') or 'Explorador',
+        'updated_at': datetime.now(timezone.utc),
+    }}, upsert=True)
+    flash('Avaliação salva. Obrigado por compartilhar sua experiência!')
+    return redirect(url_for('community.detail', place_id=place_id, _anchor='avaliacoes'))
 
 
 @community.get('/locais/<place_id>/foto')
@@ -184,9 +220,13 @@ def submit(place_id=None):
                 save_category(request.form, data['category'])
             db().contributions.insert_one(data)
             flash('Contribuição enviada para aprovação.')
+            if place and request.form.get('return_to') == 'detail':
+                return redirect(url_for('community.detail', place_id=place_id, _anchor='fotos'))
             return redirect(url_for('community.mine'))
         except ValueError as exc:
             error = str(exc)
+            if place and request.form.get('return_to') == 'detail' and request.form.get('kind') == 'photo':
+                return render_detail(place, photo_error=error)
     return render_template('community/submit.html', place=place, error=error, values=request.form), 400 if error else 200
 
 
