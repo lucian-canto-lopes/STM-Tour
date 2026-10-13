@@ -11,7 +11,7 @@ from pymongo.errors import PyMongoError
 from werkzeug.security import generate_password_hash
 from app.auth import current_user, is_admin
 from app.location import coordinates
-from app.place_filters import CATEGORIES, read_category, category_of
+from app.place_filters import categories, read_category, category_of, save_category
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -28,7 +28,7 @@ def csrf_token():
 
 @admin.app_context_processor
 def helpers():
-    return {'csrf_token': csrf_token, 'place_categories': CATEGORIES, 'place_category': category_of}
+    return {'csrf_token': csrf_token, 'place_categories': categories(), 'place_category': category_of}
 
 
 @admin.before_request
@@ -145,6 +145,7 @@ def edit(place_id=None):
                 data['photo'] = read_photo(upload)
             elif not place:
                 raise ValueError('Selecione uma foto para o local.')
+            save_category(request.form, data['category'])
             if place:
                 db().places.update_one({'_id': place['_id']}, {'$set': data})
             else:

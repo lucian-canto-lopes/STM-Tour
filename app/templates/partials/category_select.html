@@ -2,3 +2,21 @@
 <select id="category" name="category" required>
 {% for key, label in place_categories.items() %}<option value="{{ key }}" {{ 'selected' if values.get('category', 'outros') == key }}>{{ label }}</option>{% endfor %}
 </select>
+<div id="new-category-fields" {% if values.get('category', 'outros') != 'outros' %}hidden{% endif %}>
+<label for="new-category">Adicionar tipo de lugar (opcional)</label>
+<input id="new-category" name="new_category" maxlength="60" value="{{ values.get('new_category', '') }}" placeholder="Ex.: Hospedagem" aria-describedby="new-category-help">
+<small id="new-category-help">Ao salvar, este tipo ficará disponível para outros pontos. Deixe vazio para usar Outros.</small>
+</div>
+<script>
+(() => {
+  const select = document.getElementById('category');
+  const fields = document.getElementById('new-category-fields');
+  const input = document.getElementById('new-category');
+  function update() {
+    fields.hidden = select.value !== 'outros';
+    input.disabled = fields.hidden;
+  }
+  select.addEventListener('change', update);
+  update();
+})();
+</script>

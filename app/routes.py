@@ -144,8 +144,8 @@ def logout():
 def map_view():
     query = request.args.get("q", "").strip()
     category = request.args.get("category", "")
-    from app.place_filters import CATEGORIES
-    if category not in CATEGORIES:
+    from app.place_filters import categories
+    if category not in categories():
         category = ""
     return render_template("index.html", screen="map", query=query, category=category, result_count=len(map_places(query, category)))
 

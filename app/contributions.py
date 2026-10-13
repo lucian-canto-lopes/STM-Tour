@@ -10,7 +10,7 @@ from pymongo.errors import PyMongoError
 from app.admin import db, login_required, protect_forms, read_photo
 from app.auth import current_user, is_admin
 from app.location import coordinates
-from app.place_filters import read_category
+from app.place_filters import read_category, save_category
 
 community = Blueprint('community', __name__)
 community.before_request(protect_forms)
@@ -180,6 +180,8 @@ def submit(place_id=None):
                 if not upload or not upload.filename:
                     raise ValueError('Selecione uma foto.')
                 data['photo'] = read_photo(upload)
+            if kind == 'new':
+                save_category(request.form, data['category'])
             db().contributions.insert_one(data)
             flash('Contribuição enviada para aprovação.')
             return redirect(url_for('community.mine'))
