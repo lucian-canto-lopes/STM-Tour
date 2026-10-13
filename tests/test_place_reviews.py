@@ -27,10 +27,10 @@ def test_review_optional_comment_update_and_average(client):
     assert '2.0' in client.get(f'/locais/{key}').text
     own = user.get(f'/locais/{key}').text
     assert 'Editar minha avaliação' in own and 'Nova visita</textarea>' in own
-    assert 'value="1" required checked' in own
+    assert 'step="0.5" required value="1.0"' in own
 
 
-@pytest.mark.parametrize('rating', ['', '0', '6', '-1', 'nan', '2.5'])
+@pytest.mark.parametrize('rating', ['', '0', '6', '-1', 'nan', 'inf', '3.3', '4.25'])
 def test_invalid_rating_and_csrf(client, rating):
     key = make_place(client)
     user = member(client)
@@ -72,3 +72,23 @@ def test_dedicated_page_photo_submission_and_favorite(client):
     assert image in client.get(f'/locais/{key}').text
     assert post(user, f'/locais/{key}/favoritar').location == f'/locais/{key}'
     assert 'Remover dos favoritos' in user.get(f'/locais/{key}').text
+
+
+@pytest.mark.parametrize('rating', ['0.5', '1', '1.5', '2', '2.5', '3', '3.5', '4', '4.5', '5', '4,5'])
+def test_half_star_ratings(client, rating):
+    key = make_place(client)
+    user = member(client)
+    assert post(user, f'/locais/{key}/avaliar', rating=rating).status_code == 302
+    saved = client.application.extensions['mongo_db'].place_reviews.find_one()
+    assert saved['rating'] == float(rating.replace(',', '.'))
+    page = user.get(f'/locais/{key}')
+    assert page.status_code == 200 and 'data-star-rating' in page.text
+    assert f"--rating-fill: {saved['rating'] * 20}%" in page.text
+
+
+def test_average_can_differ_from_half_steps(client):
+    key = make_place(client)
+    for index, rating in enumerate(['3', '3.5', '3.5']):
+        user = member(client, f'user{index}@example.com')
+        assert post(user, f'/locais/{key}/avaliar', rating=rating).status_code == 302
+    assert '<strong>3.3</strong>' in client.get(f'/locais/{key}').text

@@ -156,11 +156,11 @@ def detail(place_id):
 def rate_place(place_id):
     place = public_place(place_id)
     try:
-        rating = int(request.form.get('rating', ''))
-        if rating not in range(1, 6):
+        rating = float(request.form.get('rating', '').replace(',', '.'))
+        if rating not in [step / 2 for step in range(1, 11)]:
             raise ValueError
     except ValueError:
-        return render_detail(place, 'Escolha uma avaliação de 1 a 5 estrelas.', request.form)
+        return render_detail(place, 'Escolha uma avaliação de 0,5 a 5 estrelas, em passos de meia estrela.', request.form)
     comment = request.form.get('comment', '').strip()
     if len(comment) > 2000:
         return render_detail(place, 'O comentário deve ter até 2.000 caracteres.', request.form)
