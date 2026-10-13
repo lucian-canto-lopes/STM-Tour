@@ -65,4 +65,4 @@ def test_invalid_submission_preserves_values_and_admin_location(client):
     edit = client.get(f'/admin/locais/{place["_id"]}/editar').text
     assert 'value="-2.5"' in edit
     assert client.get('/mapa/selecionar').status_code == 200
-    assert 'scrollWheelZoom: true' in client.get('/mapa/conteudo').text
+    assert re.search(r'"?scrollWheelZoom"?\s*:\s*true', client.get('/mapa/conteudo').text)

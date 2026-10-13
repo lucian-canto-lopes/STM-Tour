@@ -1,0 +1,4 @@
+<label for="category">Tipo de lugar</label>
+<select id="category" name="category" required>
+{% for key, label in place_categories.items() %}<option value="{{ key }}" {{ 'selected' if values.get('category', 'outros') == key }}>{{ label }}</option>{% endfor %}
+</select>

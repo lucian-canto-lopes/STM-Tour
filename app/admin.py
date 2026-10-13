@@ -11,6 +11,7 @@ from pymongo.errors import PyMongoError
 from werkzeug.security import generate_password_hash
 from app.auth import current_user, is_admin
 from app.location import coordinates
+from app.place_filters import CATEGORIES, read_category, category_of
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -27,7 +28,7 @@ def csrf_token():
 
 @admin.app_context_processor
 def helpers():
-    return {'csrf_token': csrf_token}
+    return {'csrf_token': csrf_token, 'place_categories': CATEGORIES, 'place_category': category_of}
 
 
 @admin.before_request
@@ -137,7 +138,7 @@ def edit(place_id=None):
                 raise ValueError('Informe um nome com até 120 caracteres.')
             if not description or len(description) > 5000:
                 raise ValueError('Informe uma descrição com até 5.000 caracteres.')
-            data = {'name': name, 'description': description}
+            data = {'name': name, 'description': description, 'category': read_category(request.form)}
             data.update(coordinates(request.form, required=not place or 'latitude' in (place or {})))
             upload = request.files.get('photo')
             if upload and upload.filename:

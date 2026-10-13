@@ -10,6 +10,7 @@ from pymongo.errors import PyMongoError
 from app.admin import db, login_required, protect_forms, read_photo
 from app.auth import current_user, is_admin
 from app.location import coordinates
+from app.place_filters import read_category
 
 community = Blueprint('community', __name__)
 community.before_request(protect_forms)
@@ -168,6 +169,7 @@ def submit(place_id=None):
                 if not data['name'] or len(data['name']) > 120:
                     raise ValueError('Informe um nome com até 120 caracteres.')
             if kind == 'new':
+                data['category'] = read_category(request.form)
                 data.update(coordinates(request.form))
             if kind in ('new', 'description'):
                 data['description'] = request.form.get('description', '').strip()

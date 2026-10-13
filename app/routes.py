@@ -1,6 +1,7 @@
 import folium
 from branca.element import MacroElement, Template
 from app.location import coordinates
+from app.place_filters import map_places
 
 from flask import Blueprint, current_app, jsonify, redirect, render_template, url_for, request, session, flash
 from pymongo.errors import PyMongoError, DuplicateKeyError
@@ -26,14 +27,13 @@ def map_embed():
         zoom_control=True,
         scrollWheelZoom=True,
     )
-    from app.contributions import public_places, public_place
     bounds = []
-    for entry in public_places():
+    for entry in map_places(request.args.get("q", "").strip(), request.args.get("category", "")):
         try:
             location = coordinates(entry)
         except ValueError:
             continue
-        place = public_place(str(entry['_id']))
+        place = entry
         point = [location['latitude'], location['longitude']]
         card = render_template('partials/map_card.html', place=place)
         popup = folium.Popup(folium.IFrame(html=card, width=250, height=270), max_width=270)
@@ -142,7 +142,12 @@ def logout():
 
 @main.get("/mapa")
 def map_view():
-    return render_template("index.html", screen="map")
+    query = request.args.get("q", "").strip()
+    category = request.args.get("category", "")
+    from app.place_filters import CATEGORIES
+    if category not in CATEGORIES:
+        category = ""
+    return render_template("index.html", screen="map", query=query, category=category, result_count=len(map_places(query, category)))
 
 
 @main.get("/local")
