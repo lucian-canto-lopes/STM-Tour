@@ -157,7 +157,29 @@ def place():
 
 @main.get("/perfil")
 def profile():
-    return render_template("index.html", screen="profile", can_admin=is_admin(current_user()))
+    user = current_user()
+    if not user:
+        return redirect(url_for("main.login"))
+    database = current_app.extensions["mongo_db"]
+    author = {"author_id": user['_id'], "author_source": session.get('account_source', 'users')}
+    reviews = list(database.place_reviews.find(author).sort('updated_at', -1))
+    place_ids = [review['place_id'] for review in reviews]
+    places = {place['_id']: place for place in database.places.find(
+        {'_id': {'$in': place_ids}}, {'name': 1})}
+    places.update({place['_id']: place for place in database.contributions.find(
+        {'_id': {'$in': place_ids}, 'kind': 'new', 'status': 'approved'}, {'name': 1})})
+    for review in reviews:
+        review['place'] = places.get(review['place_id'])
+    stats = {
+        'contributions': database.contributions.count_documents(author),
+        'reviews': len(reviews),
+        'photos': database.contributions.count_documents({
+            **author, 'kind': {'$in': ['new', 'photo']}, 'photo': {'$exists': True},
+        }),
+    }
+    return render_template("index.html", screen="profile", can_admin=is_admin(user),
+                           profile_name=user.get('name') or user.get('email') or 'Explorador',
+                           stats=stats, reviews=reviews)
 
 
 @main.get("/health")

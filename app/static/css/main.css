@@ -24,3 +24,5 @@
 @media(prefers-reduced-motion:reduce){.profile-action,.profile-logout button{transition:none}}
 
 .profile{display:flex;flex-direction:column;min-height:100dvh}.profile>header{flex-shrink:0}.profile-logout{margin:auto 20px 0;padding:16px 0 12px}
+
+.profile .stats{gap:0;padding:24px 12px 8px}.profile .stats>div{flex:1;gap:6px;min-width:0}.profile .stats b{font-size:22px}.profile .stats small{font-size:9px}.profile>p.profile-stats-note{margin:0 20px 20px;font-size:11px;line-height:1.5}.profile-review-link{color:#00866b;font-size:11px;padding:8px 0}.reviews article p{white-space:pre-wrap;overflow-wrap:anywhere}.profile-empty{padding:16px;border-radius:12px;background:white}.profile-empty p{margin:0 0 12px;font-size:13px;color:#596660}.profile-empty a{font-size:12px;font-weight:bold;color:#00866b;line-height:1.6}
