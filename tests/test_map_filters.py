@@ -15,6 +15,9 @@ def test_search_and_category_filter_pins(client):
     assert client.get('/mapa/conteudo?category=outros').text.count('L.marker(') == 1
     assert 'Nenhum lugar encontrado' in client.get('/mapa?q=inexistente').text
     assert 'aria-pressed="true">Praias' in client.get('/mapa?category=praias').text
+    page = client.get('/mapa').text
+    assert 'class="place-card"' not in page
+    assert 'class="interactive-map"' in page
 
 
 def test_category_saved_validated_and_moderated(client):

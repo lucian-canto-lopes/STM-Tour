@@ -12,6 +12,7 @@ body { margin: 0; }
   margin: auto;
   background: #f2f6f4;
   overflow-wrap: anywhere;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
 }
 header {
   min-height: 72px;
@@ -96,3 +97,25 @@ select { width: 100%; padding: 12px; border: 1px solid #cad5d1; border-radius: 8
 
 .favorite-form { display: flex; flex: 1 1 120px; min-width: 0; margin: 0; }
 .favorite-form button { width: 100%; }
+
+.places-heading { gap: 12px; }
+.place-order { display: grid; gap: 7px; }
+.place-order label { font-size: 12px; font-weight: 700; color: #52695d; }
+.place-order select { min-width: 0; }
+.place-list-card { padding: 0; overflow: hidden; }
+.place-list-photo { display: block; background: #dcebe4; }
+.place-list-photo img { display: block; width: 100%; height: 210px; object-fit: cover; }
+.place-list-copy { padding: 18px; }
+.place-list-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.place-list-heading h2 { min-width: 0; margin: 0; }
+.place-list-rating, .place-list-unrated { flex-shrink: 0; font-size: 12px; font-weight: 700; }
+.place-list-rating { color: #a86d00; }
+.place-list-rating small { color: inherit; font-size: 10px; }
+.place-list-unrated { color: #6c7d75; font-weight: 400; }
+.place-list-copy .description { margin: 12px 0 0; max-height: 4.8em; }
+.place-list-copy .actions { margin-top: 16px; }
+.contributions-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 20px; padding: 18px; border: 1px solid #cfe2d8; border-radius: 16px; background: white; }
+.contributions-footer span { display: grid; gap: 4px; }
+.contributions-footer strong { font-size: 14px; }
+.contributions-footer small { font-size: 11px; font-weight: 400; }
+.contributions-footer b { font-size: 20px; }

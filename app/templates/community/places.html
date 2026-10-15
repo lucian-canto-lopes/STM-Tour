@@ -1,4 +1,26 @@
-{% extends 'community/base.html' %}{% block content %}
-<div class="heading"><div><h1>Pontos turísticos</h1><p>Descubra lugares para conhecer em Santarém.</p></div><a class="button" href="{{ url_for('community.submit') }}">Sugerir novo ponto</a><a href="{{ url_for('community.mine') }}">Minhas contribuições</a></div>
-<div class="grid">{% for place in places %}<article class="panel"><h2><a href="{{ url_for('community.detail', place_id=place._id) }}">{{ place.name }}</a></h2><p class="description">{{ place.description }}</p><div class="actions"><a class="button secondary" href="{{ url_for('community.detail', place_id=place._id) }}">Conhecer e contribuir</a>{% if current_user() %}<form class="favorite-form" method="post" action="{{ url_for('community.toggle_favorite', place_id=place._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="return_to" value="places"><button class="secondary" type="submit">{{ 'Remover dos favoritos' if place.is_favorite else 'Adicionar aos favoritos' }}</button></form>{% endif %}</div></article>{% else %}<p>Nenhum ponto publicado ainda. Envie uma sugestão para avaliação.</p>{% endfor %}</div>
+{% extends 'community/base.html' %}{% block title %}Explorar · STM Tour{% endblock %}{% block content %}
+<div class="heading places-heading">
+  <div><h1>Pontos turísticos</h1></div>
+  <form class="place-order" method="get">
+    <label for="place-order">Ordenar por</label>
+    <select id="place-order" name="ordem" onchange="this.form.submit()">{% for value, label in order_options.items() %}<option value="{{ value }}" {{ 'selected' if ordering == value }}>{{ label }}</option>{% endfor %}</select>
+  </form>
+</div>
+<div class="grid places-grid">
+  {% for place in places %}
+  <article class="panel place-list-card">
+    {% if place.has_photo %}<a class="place-list-photo" href="{{ url_for('community.detail', place_id=place._id) }}"><img src="{{ url_for('community.place_photo', place_id=place._id) }}" alt="Foto de {{ place.name }}" loading="lazy"></a>{% endif %}
+    <div class="place-list-copy">
+      <div class="place-list-heading">
+        <h2><a href="{{ url_for('community.detail', place_id=place._id) }}">{{ place.name }}</a></h2>
+        {% if place.rating_average is not none %}<span class="place-list-rating" aria-label="Nota {{ place.rating_average }} de 5, com {{ place.rating_count }} {{ 'avaliação' if place.rating_count == 1 else 'avaliações' }}">★ {{ place.rating_average }} <small>({{ place.rating_count }})</small></span>{% else %}<span class="place-list-unrated">Sem avaliações</span>{% endif %}
+      </div>
+      <p class="description">{{ place.description }}</p>
+      <div class="actions"><a class="button secondary" href="{{ url_for('community.detail', place_id=place._id) }}">Ver local</a>{% if current_user() %}<form class="favorite-form" method="post" action="{{ url_for('community.toggle_favorite', place_id=place._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="return_to" value="places"><button class="secondary" type="submit">{{ 'Remover dos favoritos' if place.is_favorite else 'Favoritar' }}</button></form>{% endif %}</div>
+    </div>
+  </article>
+  {% else %}<section class="panel empty"><h2>Nenhum ponto publicado ainda</h2><p>Os pontos turísticos aprovados aparecerão aqui.</p></section>{% endfor %}
+</div>
+{% if current_user() %}<a class="contributions-footer" href="{{ url_for('community.mine') }}"><span><strong>Minhas contribuições</strong><small>Acompanhe os pontos e fotos que você enviou</small></span><b aria-hidden="true">→</b></a>{% endif %}
+{% include 'partials/nav.html' %}
 {% endblock %}

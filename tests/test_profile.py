@@ -1,3 +1,4 @@
+import io
 from datetime import datetime, timezone
 
 from test_admin import client, login, photo, post
@@ -50,3 +51,51 @@ def test_profile_counts_new_place_photos_and_separates_account_sources(client):
     assert 'Outra origem' not in page
     login(client)
     assert client.get('/perfil').status_code == 200
+
+
+def test_profile_can_update_name_bio_and_photo(client):
+    assert client.get('/perfil/editar').location == '/entrar'
+    user = member(client)
+    database = client.application.extensions['mongo_db']
+    person = database.users.find_one({'email': 'member@example.com'})
+    database.place_reviews.insert_one({
+        'author_id': person['_id'], 'author_source': 'users', 'place_id': person['_id'],
+        'rating': 5, 'comment': '', 'author_name': 'Pessoa', 'updated_at': datetime.now(timezone.utc),
+    })
+
+    editor = user.get('/perfil/editar')
+    assert editor.status_code == 200
+    assert 'Editar perfil' in editor.text and 'name="bio"' in editor.text
+    response = post(user, '/perfil/editar', name='Ana Tapajós', bio='Viajante, fotógrafa e apaixonada pela Amazônia.', photo=photo('blue'))
+    assert response.location == '/perfil'
+
+    person = database.users.find_one({'_id': person['_id']})
+    assert person['name'] == 'Ana Tapajós'
+    assert person['bio'] == 'Viajante, fotógrafa e apaixonada pela Amazônia.'
+    assert person['profile_photo'].startswith(b'\xff\xd8')
+    assert database.place_reviews.find_one()['author_name'] == 'Ana Tapajós'
+    page = user.get('/perfil').text
+    assert 'Ana Tapajós' in page and person['bio'] in page
+    assert 'aria-label="Editar perfil"' in page and '/perfil/foto' in page
+    image = user.get('/perfil/foto')
+    assert image.status_code == 200 and image.mimetype == 'image/jpeg'
+
+
+def test_profile_edit_validates_fields_and_image(client):
+    user = member(client)
+    assert post(user, '/perfil/editar', name='', bio='Texto').status_code == 400
+    assert post(user, '/perfil/editar', name='Pessoa', bio='x' * 151).status_code == 400
+    response = post(user, '/perfil/editar', name='Pessoa', bio='Texto', photo=(io.BytesIO(b'not-image'), 'photo.png'))
+    assert response.status_code == 400
+    oversized = post(user, '/perfil/editar', name='Pessoa', bio='Texto', photo=(io.BytesIO(b'x' * (6 * 1024 * 1024 + 1)), 'photo.jpg'))
+    assert oversized.status_code == 413 and 'A foto deve ter no máximo 5 MB.' in oversized.text
+    person = client.application.extensions['mongo_db'].users.find_one()
+    assert 'bio' not in person and 'profile_photo' not in person
+
+
+def test_legacy_admin_can_edit_profile(client):
+    login(client)
+    assert post(client, '/perfil/editar', name='Administrador', bio='Cuido dos pontos publicados.').location == '/perfil'
+    administrator = client.application.extensions['mongo_db'].admins.find_one()
+    assert administrator['name'] == 'Administrador'
+    assert administrator['bio'] == 'Cuido dos pontos publicados.'

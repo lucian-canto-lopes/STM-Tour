@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{% block title %}Contribuições · STM Tour{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">{% block styles %}{% endblock %}</head>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>{% block title %}Contribuições · STM Tour{% endblock %}</title><link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}"><link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">{% block styles %}{% endblock %}</head>
 <body><div class="admin-app"><header><a class="brand" href="{{ url_for('main.map_view') }}">STM Tour</a><span><a href="{{ url_for('community.favorites') }}">Favoritos</a> · <a href="{{ url_for('main.profile') }}">Meu perfil</a></span></header><main>
 {% for message in get_flashed_messages() %}<p class="notice" role="status">{{ message }}</p>{% endfor %}
 {% block content %}{% endblock %}

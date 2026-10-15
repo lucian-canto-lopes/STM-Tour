@@ -1,0 +1,45 @@
+:root {
+  --bottom-nav-height: calc(62px + env(safe-area-inset-bottom, 0px));
+  scrollbar-gutter: stable;
+}
+
+.bottom-nav {
+  position: fixed;
+  z-index: 10;
+  left: 50%;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(100%, 430px);
+  height: var(--bottom-nav-height);
+  margin: 0;
+  padding: 0 0 env(safe-area-inset-bottom, 0px);
+  transform: translateX(-50%);
+  background: white;
+  border-top: 1px solid #e2e9e5;
+}
+
+.bottom-nav a {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: #65736e;
+  font-size: 18px;
+}
+
+.bottom-nav a svg {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.bottom-nav small {
+  color: inherit;
+  font-size: 9px;
+  line-height: 12px;
+}
+
+.bottom-nav a.active { color: #74cdb5; }

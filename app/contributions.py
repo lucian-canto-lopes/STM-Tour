@@ -65,6 +65,52 @@ def public_places():
     return places
 
 
+PLACE_ORDER_OPTIONS = {
+    'melhores': 'Mais bem avaliados',
+    'alfabetica': 'Ordem alfabética',
+    'avaliacoes': 'Mais avaliações',
+    'recentes': 'Mais recentes',
+}
+
+
+def ranked_places(places, ordering='melhores'):
+    place_ids = [place['_id'] for place in places]
+    ratings = {}
+    for review in db().place_reviews.find({'place_id': {'$in': place_ids}}, {'place_id': 1, 'rating': 1}):
+        total, count = ratings.get(review['place_id'], (0.0, 0))
+        ratings[review['place_id']] = (total + float(review['rating']), count + 1)
+    photos = {
+        item['_id'] for item in db().places.find(
+            {'_id': {'$in': place_ids}, 'photo': {'$exists': True}}, {'_id': 1}
+        )
+    }
+    photos.update(item['_id'] for item in db().contributions.find(
+        {'_id': {'$in': place_ids}, 'kind': 'new', 'status': 'approved', 'photo': {'$exists': True}},
+        {'_id': 1},
+    ))
+    for place in places:
+        total, count = ratings.get(place['_id'], (0.0, 0))
+        place['rating_count'] = count
+        place['rating_average'] = round(total / count, 1) if count else None
+        place['has_photo'] = place['_id'] in photos
+    if ordering == 'alfabetica':
+        return sorted(places, key=lambda place: place.get('name', '').casefold())
+    if ordering == 'avaliacoes':
+        return sorted(places, key=lambda place: (
+            -place['rating_count'],
+            -(place['rating_average'] or 0),
+            place.get('name', '').casefold(),
+        ))
+    if ordering == 'recentes':
+        return sorted(places, key=lambda place: str(place['_id']), reverse=True)
+    return sorted(places, key=lambda place: (
+        place['rating_average'] is None,
+        -(place['rating_average'] or 0),
+        -place['rating_count'],
+        place.get('name', '').casefold(),
+    ))
+
+
 def public_place(place_id):
     key = object_id(place_id)
     place = db().places.find_one({'_id': key}, {'photo': 0})
@@ -91,10 +137,14 @@ def upload_error(error):
 @community.get('/locais')
 def places():
     favorites = favorite_ids() if current_user() else set()
-    places = public_places()
+    ordering = request.args.get('ordem', 'melhores')
+    if ordering not in PLACE_ORDER_OPTIONS:
+        ordering = 'melhores'
+    places = ranked_places(public_places(), ordering)
     for place in places:
         place['is_favorite'] = place['_id'] in favorites
-    return render_template('community/places.html', places=places)
+    return render_template('community/places.html', places=places, ordering=ordering,
+                           order_options=PLACE_ORDER_OPTIONS)
 
 
 @community.get('/favoritos')

@@ -1,12 +1,14 @@
+import io
+
 import folium
 from branca.element import MacroElement, Template
 from app.location import coordinates
 from app.place_filters import map_places
 
-from flask import Blueprint, current_app, jsonify, redirect, render_template, url_for, request, session, flash
+from flask import Blueprint, abort, current_app, jsonify, redirect, render_template, request, send_file, session, url_for, flash
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from werkzeug.security import check_password_hash, generate_password_hash
-from app.admin import protect_forms
+from app.admin import protect_forms, read_photo
 from app.auth import current_user, is_admin
 
 main = Blueprint("main", __name__)
@@ -179,7 +181,68 @@ def profile():
     }
     return render_template("index.html", screen="profile", can_admin=is_admin(user),
                            profile_name=user.get('name') or user.get('email') or 'Explorador',
+                           profile_bio=user.get('bio', ''),
+                           has_profile_photo=bool(user.get('profile_photo')),
                            stats=stats, reviews=reviews)
+
+
+def account_collection():
+    source = session.get('account_source', 'users')
+    return current_app.extensions['mongo_db'].admins if source == 'admins' else current_app.extensions['mongo_db'].users
+
+
+def render_profile_editor(user, error=None, status=200, values=None):
+    if values is None:
+        values = request.form if request.method == 'POST' else user
+    return render_template('profile_edit.html', user=user, values=values, error=error), status
+
+
+@main.route('/perfil/editar', methods=['GET', 'POST'])
+def edit_profile():
+    user = current_user()
+    if not user:
+        return redirect(url_for('main.login'))
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name', '').strip()
+            bio = request.form.get('bio', '').strip()
+            if not name or len(name) > 120:
+                raise ValueError('Informe um nome com até 120 caracteres.')
+            if len(bio) > 150:
+                raise ValueError('A bio deve ter até 150 caracteres.')
+            changes = {'name': name, 'bio': bio}
+            upload = request.files.get('photo')
+            if upload and upload.filename:
+                changes['profile_photo'] = read_photo(upload)
+            account_collection().update_one({'_id': user['_id']}, {'$set': changes})
+            current_app.extensions['mongo_db'].place_reviews.update_many({
+                'author_id': user['_id'],
+                'author_source': session.get('account_source', 'users'),
+            }, {'$set': {'author_name': name}})
+            session['user_name'] = name
+            flash('Perfil atualizado com sucesso.')
+            return redirect(url_for('main.profile'))
+        except ValueError as error:
+            return render_profile_editor(user, str(error), 400)
+    return render_profile_editor(user)
+
+
+@main.get('/perfil/foto')
+def profile_photo():
+    user = current_user()
+    if not user:
+        return redirect(url_for('main.login'))
+    if not user.get('profile_photo'):
+        abort(404)
+    return send_file(io.BytesIO(user['profile_photo']), mimetype='image/jpeg', max_age=0)
+
+
+@main.errorhandler(413)
+def upload_too_large(error):
+    if request.endpoint == 'main.edit_profile' and current_user():
+        user = current_user()
+        return render_profile_editor(user, 'A foto deve ter no máximo 5 MB.', 413, user)
+    return error
 
 
 @main.get("/health")

@@ -92,3 +92,43 @@ def test_average_can_differ_from_half_steps(client):
         user = member(client, f'user{index}@example.com')
         assert post(user, f'/locais/{key}/avaliar', rating=rating).status_code == 302
     assert '<strong>3.3</strong>' in client.get(f'/locais/{key}').text
+
+
+def test_explore_lists_all_places_by_rating_and_shows_available_photos(client):
+    database = client.application.extensions['mongo_db']
+    best = database.places.insert_one({'name': 'Melhor lugar', 'description': 'Nota alta', 'photo': b'photo'}).inserted_id
+    second = database.places.insert_one({'name': 'Segundo lugar', 'description': 'Nota média'}).inserted_id
+    unrated = database.contributions.insert_one({
+        'kind': 'new', 'status': 'approved', 'name': 'Aventura sem nota', 'description': 'Ainda sem avaliação',
+        'photo': b'photo',
+    }).inserted_id
+    popular = database.places.insert_one({'name': 'Popular', 'description': 'Muitas avaliações'}).inserted_id
+    database.place_reviews.insert_many([
+        {'place_id': best, 'rating': 5},
+        {'place_id': best, 'rating': 4},
+        {'place_id': second, 'rating': 3},
+        {'place_id': popular, 'rating': 1},
+        {'place_id': popular, 'rating': 2},
+        {'place_id': popular, 'rating': 3},
+    ])
+
+    page = client.get('/locais').text
+    assert page.index('Melhor lugar') < page.index('Segundo lugar') < page.index('Popular') < page.index('Aventura sem nota')
+    assert '★ 4.5' in page and '★ 3.0' in page and 'Sem avaliações' in page
+    assert f'/locais/{best}/foto' in page and f'/locais/{unrated}/foto' in page
+    assert f'/locais/{second}/foto' not in page
+    assert 'Sugerir novo ponto' not in page
+
+    alphabetical = client.get('/locais?ordem=alfabetica').text
+    assert alphabetical.index('Aventura sem nota') < alphabetical.index('Melhor lugar') < alphabetical.index('Popular') < alphabetical.index('Segundo lugar')
+    assert 'value="alfabetica" selected' in alphabetical
+    assert 'onchange="this.form.submit()"' in alphabetical
+    assert '>Ordenar</button>' not in alphabetical
+    most_reviewed = client.get('/locais?ordem=avaliacoes').text
+    assert most_reviewed.index('Popular') < most_reviewed.index('Melhor lugar')
+    newest = client.get('/locais?ordem=recentes').text
+    assert newest.index('Popular') < newest.index('Aventura sem nota')
+
+    user = member(client)
+    signed_in_page = user.get('/locais').text
+    assert signed_in_page.rfind('Minhas contribuições') > signed_in_page.rfind('place-list-card')

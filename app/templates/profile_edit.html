@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#009c7d">
+  <title>Editar perfil · STM Tour</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bottom-nav.css') }}">
+</head>
+<body><div class="app"><main class="profile-editor">
+  <header><a href="{{ url_for('main.profile') }}" aria-label="Voltar ao perfil">←</a><strong>Editar perfil</strong><span aria-hidden="true"></span></header>
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    {% if error %}<p class="profile-form-error" role="alert">{{ error }}</p>{% endif %}
+    <div class="profile-photo-editor">
+      {% if user.get('profile_photo') %}<img src="{{ url_for('main.profile_photo') }}" alt="Foto de perfil atual">{% else %}<span aria-hidden="true">{{ (values.get('name') or user.get('name') or user.get('email') or 'E')[0]|upper }}</span>{% endif %}
+      <label for="photo">Alterar foto do perfil</label>
+      <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-describedby="photo-help">
+      <small id="photo-help">JPG, PNG ou WebP. Até 5 MB.</small>
+    </div>
+    <label for="name">Nome</label>
+    <input id="name" name="name" maxlength="120" required value="{{ values.get('name', '') }}">
+    <label for="bio">Bio</label>
+    <textarea id="bio" name="bio" maxlength="150" rows="4" placeholder="Conte um pouco sobre você">{{ values.get('bio', '') }}</textarea>
+    <small>Até 150 caracteres.</small>
+    <button type="submit">Salvar alterações</button>
+  </form>
+  {% include 'partials/nav.html' %}
+</main></div></body>
+</html>
