@@ -7,3 +7,7 @@
 .stars-filled{position:absolute;top:0;left:0;width:var(--rating-fill,0%);overflow:hidden;color:#b5780a;-webkit-text-stroke:1px #b5780a;pointer-events:none}
 .rating-number{display:flex;align-items:center;gap:8px;font-size:12px;color:#52695d}.rating-number input{width:70px;padding:8px;font-size:14px}
 .static-stars{font-size:21px;vertical-align:middle}.review-stars small{font-size:12px;color:#52695d;letter-spacing:0}.review-stars .stars-filled{color:#b5780a}.review-stars .stars-empty{color:transparent}
+
+.detail-panel[hidden]{display:none}
+.place-tabs a[aria-selected="true"]{background:#e7f6ef;color:#00775f}
+.detail-panel{touch-action:pan-y}

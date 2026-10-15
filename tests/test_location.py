@@ -66,3 +66,19 @@ def test_invalid_submission_preserves_values_and_admin_location(client):
     assert 'value="-2.5"' in edit
     assert client.get('/mapa/selecionar').status_code == 200
     assert re.search(r'"?scrollWheelZoom"?\s*:\s*true', client.get('/mapa/conteudo').text)
+
+
+def test_map_zoom_out_limit_covers_region_and_adapts_to_screen(client):
+    from app.routes import SANTAREM_MAP_BOUNDS
+
+    south_west, north_east = SANTAREM_MAP_BOUNDS
+    # Sede, Alter do Chão e uma comunidade na região do Arapiuns.
+    for latitude, longitude in [(-2.4431, -54.7083), (-2.506, -54.951), (-2.75, -55.6)]:
+        assert south_west[0] <= latitude <= north_east[0]
+        assert south_west[1] <= longitude <= north_east[1]
+    html = client.get('/mapa/conteudo').text
+    assert 'L.latLngBounds([[-4.1, -56.1], [-1.9, -53.9]])' in html
+    assert 'setMinZoom(regionalMap.getBoundsZoom(regionalBounds, false))' in html
+    assert "regionalMap.on('resize', updateRegionalZoomLimit)" in html
+    assert 'regionalMap.whenReady(updateRegionalZoomLimit)' in html
+    assert 'updateRegionalZoomLimit' not in client.get('/mapa/selecionar').text

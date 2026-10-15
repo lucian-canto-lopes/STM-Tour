@@ -132,3 +132,31 @@ def test_explore_lists_all_places_by_rating_and_shows_available_photos(client):
     user = member(client)
     signed_in_page = user.get('/locais').text
     assert signed_in_page.rfind('Minhas contribuições') > signed_in_page.rfind('place-list-card')
+
+
+def test_place_tabs_default_and_form_errors(client):
+    from html.parser import HTMLParser
+
+    class Panels(HTMLParser):
+        def __init__(self, html):
+            super().__init__()
+            self.visible = []
+            self.feed(html)
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if attrs.get('role') == 'tabpanel' and 'hidden' not in attrs:
+                self.visible.append(attrs['id'])
+
+    key = make_place(client)
+    page = client.get(f'/locais/{key}').text
+    assert Panels(page).visible == ['sobre']
+    assert 'role="tablist"' in page
+    assert 'js/place-tabs.js' in page
+    user = member(client)
+    invalid_photo = post(user, f'/locais/{key}/contribuir', kind='photo', return_to='detail')
+    assert invalid_photo.status_code == 400
+    assert Panels(invalid_photo.text).visible == ['fotos']
+    invalid_review = post(user, f'/locais/{key}/avaliar', rating='6')
+    assert invalid_review.status_code == 400
+    assert Panels(invalid_review.text).visible == ['avaliacoes']

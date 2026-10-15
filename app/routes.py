@@ -13,6 +13,10 @@ from app.auth import current_user, is_admin
 
 main = Blueprint("main", __name__)
 
+# Área de referência aproximada que inclui a sede, Alter do Chão e as
+# comunidades dos rios Tapajós e Arapiuns; não é uma divisa administrativa.
+SANTAREM_MAP_BOUNDS = [[-4.1, -56.1], [-1.9, -53.9]]
+
 
 @main.get("/")
 def home():
@@ -28,6 +32,7 @@ def map_embed():
         control_scale=True,
         zoom_control=True,
         scrollWheelZoom=True,
+        zoom_snap=0.25,
     )
     bounds = []
     for entry in map_places(request.args.get("q", "").strip(), request.args.get("category", "")):
@@ -43,6 +48,27 @@ def map_embed():
         bounds.append(point)
     if bounds:
         city_map.fit_bounds(bounds, max_zoom=15, padding=(25, 25))
+    zoom_limit = MacroElement()
+    zoom_limit.region_bounds = SANTAREM_MAP_BOUNDS
+    zoom_limit._template = Template("""
+        {% macro script(this, kwargs) %}
+        const regionalMap = {{ this._parent.get_name() }};
+        const regionalBounds = L.latLngBounds({{ this.region_bounds | tojson }});
+        regionalMap.on('zoomend', function() {
+            if (regionalMap.getZoom() === regionalMap.getMinZoom()) {
+                regionalMap.panTo(regionalBounds.getCenter(), {animate: false});
+            }
+        });
+        function updateRegionalZoomLimit() {
+            const size = regionalMap.getSize();
+            if (size.x <= 0 || size.y <= 0) return;
+            regionalMap.setMinZoom(regionalMap.getBoundsZoom(regionalBounds, false));
+        }
+        regionalMap.whenReady(updateRegionalZoomLimit);
+        regionalMap.on('resize', updateRegionalZoomLimit);
+        {% endmacro %}
+    """)
+    city_map.add_child(zoom_limit)
     return city_map.get_root().render()
 
 
