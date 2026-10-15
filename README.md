@@ -40,3 +40,14 @@ Na página inicial, **Entrar** abre `/entrar`, e **Criar conta** abre `/criar-co
 O login é único para todas as contas. Novas contas ficam na coleção `users`, com `role: user` no cadastro público e `role: admin` pelo comando `create-admin`. O servidor consulta a permissão no banco em cada acesso ao painel; usuários sem essa permissão recebem HTTP 403. Administradores também encontram o link **Painel administrativo** no perfil.
 
 Administradores antigos da coleção `admins` continuam entrando pela mesma tela. Se já houver uma conta em `users` com o mesmo e-mail, ela tem prioridade e não recebe privilégios automaticamente. O cadastro e o comando `create-admin` recusam e-mails já utilizados em qualquer uma das coleções. A URL antiga `/admin/entrar` redireciona para `/entrar`.
+
+## Implantação no Railway
+
+Mantenha a aplicação e o MongoDB no mesmo projeto do Railway. No serviço da aplicação, abra **Variables** e adicione:
+
+- `MONGO_URL`: use uma referência para `MONGO_URL` do serviço MongoDB, por exemplo `${{MongoDB.MONGO_URL}}`. O nome `MongoDB` diferencia maiúsculas e minúsculas; selecione o serviço pelo autocompletar do Railway.
+- `MONGO_DB_NAME`: `stm_tour`.
+- `SECRET_KEY`: uma chave aleatória longa e estável.
+- `SESSION_COOKIE_SECURE`: `true`.
+
+Use a URL privada `MONGO_URL` quando os dois serviços estiverem no mesmo projeto. Não copie usuário ou senha para o repositório. Depois, aplique as alterações para gerar uma nova implantação. Em **Settings → Healthcheck**, configure o caminho `/health`; ele só retorna sucesso quando a aplicação também consegue consultar o MongoDB. O contêiner usa automaticamente a variável `PORT` fornecida pelo Railway.

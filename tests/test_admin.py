@@ -8,6 +8,18 @@ from werkzeug.security import generate_password_hash
 from app import create_app
 
 
+def test_railway_mongo_variables(monkeypatch):
+    monkeypatch.delenv('MONGO_URI', raising=False)
+    monkeypatch.setenv('MONGO_URL', 'mongodb://railway.internal:27017')
+    monkeypatch.setenv('MONGO_DB_NAME', 'railway_stm_tour')
+
+    app = create_app()
+
+    assert app.config['MONGO_URI'] == 'mongodb://railway.internal:27017'
+    assert app.extensions['mongo_db'].name == 'railway_stm_tour'
+    app.extensions['mongo_client'].close()
+
+
 @pytest.fixture
 def client():
     app = create_app()
