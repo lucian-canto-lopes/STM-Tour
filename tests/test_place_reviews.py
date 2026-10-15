@@ -131,7 +131,8 @@ def test_explore_lists_all_places_by_rating_and_shows_available_photos(client):
 
     user = member(client)
     signed_in_page = user.get('/locais').text
-    assert signed_in_page.rfind('Minhas contribuições') > signed_in_page.rfind('place-list-card')
+    assert 'contributions-footer' not in signed_in_page
+    assert 'Minhas contribuições' not in signed_in_page
 
 
 def test_place_tabs_default_and_form_errors(client):

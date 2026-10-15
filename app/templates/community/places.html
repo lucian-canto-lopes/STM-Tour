@@ -21,6 +21,5 @@
   </article>
   {% else %}<section class="panel empty"><h2>Nenhum ponto publicado ainda</h2><p>Os pontos turísticos aprovados aparecerão aqui.</p></section>{% endfor %}
 </div>
-{% if current_user() %}<a class="contributions-footer" href="{{ url_for('community.mine') }}"><span><strong>Minhas contribuições</strong><small>Acompanhe os pontos e fotos que você enviou</small></span><b aria-hidden="true">→</b></a>{% endif %}
 {% include 'partials/nav.html' %}
 {% endblock %}
