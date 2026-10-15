@@ -1,0 +1,8 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+<div class="heading"><h1>Moderação</h1><p>Revise as contribuições da comunidade e gerencie as permissões dos usuários.</p></div>
+<div class="grid">
+  <a class="panel moderation-link" href="{{ url_for('community.review_queue') }}"><h2>Revisar contribuições <span aria-hidden="true">→</span></h2><p>Analise novos pontos, fotos e descrições enviados pela comunidade.</p></a>
+  <a class="panel moderation-link" href="{{ url_for('admin.users') }}"><h2>Gerenciar usuários <span aria-hidden="true">→</span></h2><p>Veja as contas cadastradas e conceda acesso administrativo.</p></a>
+</div>
+{% endblock %}

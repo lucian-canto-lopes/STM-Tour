@@ -1,6 +1,6 @@
 {% extends 'admin/base.html' if moderation else 'community/base.html' %}
 {% block content %}
-<a class="back" href="{{ url_for('admin.index') if moderation else url_for('community.places') }}">← Voltar</a>
+<a class="back" href="{{ url_for('admin.moderation') if moderation else url_for('community.places') }}">← Voltar</a>
 <div class="heading"><h1>{{ 'Revisar contribuições' if moderation else 'Minhas contribuições' }}</h1></div>
 <div class="grid">{% for item in items %}<article class="panel">
 <h2>{{ item.name }}</h2><p>{{ {'new': 'Novo ponto', 'photo': 'Nova foto', 'description': 'Descrição sugerida'}[item.kind] }} · <strong>{{ {'pending': 'Aguardando aprovação', 'approved': 'Aprovada', 'rejected': 'Rejeitada'}[item.status] }}</strong></p>

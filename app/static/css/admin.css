@@ -119,3 +119,8 @@ select { width: 100%; padding: 12px; border: 1px solid #cad5d1; border-radius: 8
 .contributions-footer strong { font-size: 14px; }
 .contributions-footer small { font-size: 11px; font-weight: 400; }
 .contributions-footer b { font-size: 20px; }
+
+.moderation-link { display: block; }
+.moderation-link h2 { display: flex; justify-content: space-between; gap: 12px; }
+.moderation-link p { margin-bottom: 0; }
+.moderation-link:hover { border-color: #009c7d; }

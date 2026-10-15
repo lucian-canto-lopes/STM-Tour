@@ -12,6 +12,8 @@ A página `/mapa`, aberta após o login do usuário, exibe um mapa interativo de
 
 O painel permite listar, cadastrar, editar e remover locais com nome, descrição e foto. As fotos são validadas e armazenadas no MongoDB junto ao local; são aceitos JPG, PNG e WebP de até 5 MB e 20 megapixels. Ao editar, é possível manter a foto atual. A remoção exige confirmação. As sessões expiram após oito horas; sem `SECRET_KEY` configurada, uma chave temporária é gerada a cada inicialização.
 
+Administradores têm uma barra inferior com **Locais cadastrados**, **Mapa**, **Moderação** e **Perfil**. Moderação reúne **Revisar contribuições** e **Gerenciar usuários**; Locais cadastrados permite listar, criar, editar e remover locais. A barra administrativa também acompanha o mapa e o perfil da conta. A opção de sair fica no perfil.
+
 Para promover uma conta existente, abra **Gerenciar usuários** no painel e clique em **Tornar administrador** na conta desejada. Apenas administradores podem conceder essa permissão. O usuário promovido pode atualizar o perfil e clicar em **Painel administrativo**, sem sair da conta; nos próximos logins, será direcionado ao painel.
 
 Os locais cadastrados diretamente pelo administrador e os novos pontos aprovados aparecem em **Explorar → Pontos turísticos** (`/locais`). O mapa Folium exibe pins dos pontos públicos com coordenadas válidas. Ao clicar, abre um cartão com foto, nome, descrição e link para o local. O enquadramento se ajusta aos pontos; sem pontos, fica centrado em Santarém. Cadastros antigos sem coordenadas continuam na lista e não recebem uma localização automática.
@@ -25,7 +27,7 @@ Os locais cadastrados diretamente pelo administrador e os novos pontos aprovados
 
 Envios pendentes ou rejeitados ficam privados para o autor e os administradores, inclusive suas fotos. Uma descrição proposta só substitui a descrição pública após aprovação; fotos aprovadas são adicionadas à galeria, preservando a foto principal. Novos pontos só aparecem na lista pública e no mapa após aprovação. Atualize o mapa aberto para carregar os pontos recém-aprovados. Cadastros feitos diretamente no painel administrativo continuam sendo publicados imediatamente e também oferecem o seletor de localização. A edição de um cadastro administrativo antigo permite adicionar suas coordenadas.
 
-As contribuições ficam na coleção `contributions`, com autor, data, estado e registro de quem decidiu. A mudança de estado é atômica e aceita apenas uma decisão por envio; a visualização pública consulta somente contribuições aprovadas. Pontos criados pela comunidade ficam nessa coleção e são acessados na lista pública; a edição e remoção do painel de locais continuam voltadas aos cadastros diretos do administrador.
+As contribuições ficam na coleção `contributions`, com autor, data, estado e registro de quem decidiu. A mudança de estado é atômica e aceita apenas uma decisão por envio; a visualização pública consulta somente contribuições aprovadas. Pontos criados pela comunidade ficam nessa coleção e são acessados na lista pública; os novos pontos aprovados também aparecem em **Locais cadastrados** no painel administrativo, onde podem ser editados e removidos, mantendo sua identificação e autoria enquanto cadastrados.
 
 ### Testes
 

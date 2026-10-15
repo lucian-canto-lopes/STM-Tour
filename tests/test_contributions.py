@@ -108,3 +108,33 @@ def test_favorites_are_private_and_toggle(client):
 
     assert post(user, f'/locais/{place_id}/favoritar', return_to='favorites').location == '/favoritos'
     assert database.favorites.count_documents({'place_id': place_id}) == 0
+
+
+def test_admin_manages_approved_community_places(client):
+    user = member(client)
+    post(user, '/contribuir', name='Praia comunitária', latitude='-2.44', longitude='-54.70',
+         description='Local enviado por usuário', photo=photo())
+    database = client.application.extensions['mongo_db']
+    item = database.contributions.find_one({'kind': 'new'})
+    key = str(item['_id'])
+    path = f'/admin/locais/{key}'
+    login(client)
+    assert 'Praia comunitária' not in client.get('/admin/').text
+    for suffix in ['/editar', '/remover', '/foto']:
+        assert client.get(path + suffix).status_code == 404
+    post(client, f'/admin/contribuicoes/{key}/revisar', decision='approved')
+    assert 'Praia comunitária' in client.get('/admin/').text
+    assert client.get(path + '/foto').mimetype == 'image/jpeg'
+    assert client.get(path + '/editar').status_code == 200
+    assert post(client, path + '/editar', name='Praia atualizada', description='Descrição revisada',
+                latitude='-2.44', longitude='-54.70').status_code == 302
+    updated = database.contributions.find_one({'_id': item['_id']})
+    assert updated['name'] == 'Praia atualizada'
+    assert updated['status'] == 'approved'
+    assert updated['author_id'] == item['author_id']
+    assert database.places.count_documents({}) == 0
+    assert 'Praia atualizada' in user.get('/locais').text
+    assert client.get(path + '/remover').status_code == 200
+    assert post(client, path + '/remover').status_code == 302
+    assert 'Praia atualizada' not in client.get('/admin/').text
+    assert user.get(f'/locais/{key}').status_code == 404

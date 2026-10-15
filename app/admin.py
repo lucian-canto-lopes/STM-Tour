@@ -28,7 +28,8 @@ def csrf_token():
 
 @admin.app_context_processor
 def helpers():
-    return {'csrf_token': csrf_token, 'place_categories': categories(), 'place_category': category_of}
+    return {'csrf_token': csrf_token, 'place_categories': categories(), 'place_category': category_of,
+            'has_admin_navigation': lambda: is_admin(current_user())}
 
 
 @admin.before_request
@@ -46,6 +47,7 @@ def login_required(view):
             return redirect(url_for('main.login'))
         if not is_admin(user):
             abort(403)
+        csrf_token()
         return view(*args, **kwargs)
     return wrapped
 
@@ -74,7 +76,9 @@ def logout():
 @admin.get('/')
 @login_required
 def index():
-    return render_template('admin/index.html', places=list(db().places.find({}, {'photo': 0}).sort('_id', -1)))
+    from app.contributions import public_places
+    places = sorted(public_places(), key=lambda place: place['_id'], reverse=True)
+    return render_template('admin/index.html', places=places)
 
 
 @admin.get('/usuarios')
@@ -82,6 +86,12 @@ def index():
 def users():
     accounts = list(db().users.find({}, {'name': 1, 'email': 1, 'role': 1}).sort('email', 1))
     return render_template('admin/users.html', users=accounts)
+
+
+@admin.get('/moderacao')
+@login_required
+def moderation():
+    return render_template('admin/moderation.html')
 
 
 @admin.post('/usuarios/<user_id>/promover')
@@ -100,9 +110,18 @@ def get_place(place_id, projection=None):
     if not ObjectId.is_valid(place_id):
         abort(404)
     place = db().places.find_one({'_id': ObjectId(place_id)}, projection)
-    if not place:
+    if place is None:
+        place = db().contributions.find_one(
+            {'_id': ObjectId(place_id), 'kind': 'new', 'status': 'approved'}, projection)
+    if place is None:
         abort(404)
     return place
+
+
+def place_collection(place):
+    if place.get('kind') == 'new' and place.get('status') == 'approved':
+        return db().contributions
+    return db().places
 
 
 def read_photo(upload):
@@ -147,7 +166,7 @@ def edit(place_id=None):
                 raise ValueError('Selecione uma foto para o local.')
             save_category(request.form, data['category'])
             if place:
-                db().places.update_one({'_id': place['_id']}, {'$set': data})
+                place_collection(place).update_one({'_id': place['_id']}, {'$set': data})
             else:
                 db().places.insert_one(data)
             flash('Local salvo com sucesso.', 'success')
@@ -169,7 +188,7 @@ def photo(place_id):
 def delete(place_id):
     place = get_place(place_id, {'photo': 0})
     if request.method == 'POST':
-        db().places.delete_one({'_id': place['_id']})
+        place_collection(place).delete_one({'_id': place['_id']})
         flash('Local removido com sucesso.', 'success')
         return redirect(url_for('admin.index'))
     return render_template('admin/delete.html', place=place)

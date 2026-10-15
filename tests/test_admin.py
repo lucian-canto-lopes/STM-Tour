@@ -177,7 +177,8 @@ def test_admin_promotes_user_with_active_session(client, legacy_admin):
     assert post(user_client, '/entrar', email='maria@example.com', password='user-password').location == '/mapa'
     assert user_client.get('/admin/').status_code == 403
     login(client)
-    assert b'/admin/usuarios' in client.get('/admin/').data
+    assert b'/admin/moderacao' in client.get('/admin/').data
+    assert b'/admin/usuarios' in client.get('/admin/moderacao').data
     listing = client.get('/admin/usuarios')
     assert b'maria@example.com' in listing.data
     assert b'password_hash' not in listing.data
@@ -215,3 +216,45 @@ def test_promotion_requires_admin_and_csrf(client):
     assert database.users.find_one({'_id': user_id})['role'] == 'user'
     assert post(client, '/admin/usuarios/invalid/promover').status_code == 404
     assert post(client, '/admin/usuarios/000000000000000000000000/promover').status_code == 404
+
+
+def test_admin_navigation_and_moderation(client):
+    assert client.get('/admin/moderacao').status_code == 302
+    login(client)
+    for path, active in [('/admin/', '/admin/'), ('/admin/moderacao', '/admin/moderacao'),
+                         ('/admin/usuarios', '/admin/moderacao'),
+                         ('/admin/contribuicoes', '/admin/moderacao'),
+                         ('/mapa', '/mapa'), ('/perfil', '/perfil')]:
+        response = client.get(path)
+        assert response.status_code == 200
+        html = response.get_data(as_text=True)
+        assert 'aria-label="Navegação do administrador"' in html
+        assert f'aria-current="page" href="{active}"' in html
+        assert 'Locais cadastrados' in html
+    html = client.get('/admin/moderacao').get_data(as_text=True)
+    assert 'Revisar contribuições' in html
+    assert 'Gerenciar usuários' in html
+
+
+def test_regular_user_keeps_navigation_and_cannot_moderate(client):
+    user = client.application.extensions['mongo_db'].users.insert_one({
+        'name': 'Visitante', 'email': 'visitor@example.com', 'role': 'user',
+    })
+    with client.session_transaction() as session:
+        session['user_id'] = str(user.inserted_id)
+    html = client.get('/mapa').get_data(as_text=True)
+    assert 'Explorar' in html
+    assert 'Favoritos' in html
+    assert 'Navegação do administrador' not in html
+    assert client.get('/admin/moderacao').status_code == 403
+
+
+def test_logout_only_in_profile(client):
+    login(client)
+    for path in ['/admin/', '/admin/moderacao', '/admin/usuarios', '/admin/contribuicoes']:
+        html = client.get(path).text
+        assert 'action="/admin/sair"' not in html
+        assert 'action="/sair"' not in html
+    html = client.get('/perfil').text
+    assert 'class="profile-logout"' in html
+    assert 'Sair da conta' in html
