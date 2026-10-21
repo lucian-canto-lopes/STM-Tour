@@ -1,10 +1,13 @@
 <fieldset class="location-picker">
   <legend>Localização do ponto</legend>
   <label for="location-mode">Como deseja informar a localização?</label>
-  <select id="location-mode"><option value="coordinates">Digitar coordenadas</option><option value="map">Escolher no mapa</option></select>
+  <select id="location-mode" name="location_mode"><option value="map" {{ 'selected' if values.get('location_mode') == 'map' }}>Escolher no mapa</option><option value="coordinates" {{ 'selected' if values.get('location_mode', 'coordinates') == 'coordinates' }}>Digitar coordenadas</option></select>
+  <div id="location-coordinate-fields">
   <label for="latitude">Latitude</label><input id="latitude" name="latitude" inputmode="decimal" placeholder="Ex.: -2.4431" value="{{ values.get('latitude', '') }}" {{ 'required' if not place or place.get('latitude') is not none }}>
   <label for="longitude">Longitude</label><input id="longitude" name="longitude" inputmode="decimal" placeholder="Ex.: -54.7083" value="{{ values.get('longitude', '') }}" {{ 'required' if not place or place.get('latitude') is not none }}>
-  <small>Use graus decimais. No mapa, clique no local ou arraste o pin para ajustar. As coordenadas serão preenchidas automaticamente.</small>
+  <small>Use graus decimais para informar a localização.</small>
+  </div>
+  <small id="location-map-help" hidden>Clique no local ou arraste o marcador para ajustar a posição.</small>
   <div id="location-map-container" hidden><iframe id="location-map" data-src="{{ url_for('main.location_picker') }}" title="Escolher localização do ponto turístico" style="width:100%;height:320px;border:0"></iframe></div>
   <p id="location-status" role="status"></p>
 </fieldset>

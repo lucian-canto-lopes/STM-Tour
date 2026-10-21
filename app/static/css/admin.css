@@ -124,3 +124,6 @@ select { width: 100%; padding: 12px; border: 1px solid #cad5d1; border-radius: 8
 .moderation-link h2 { display: flex; justify-content: space-between; gap: 12px; }
 .moderation-link p { margin-bottom: 0; }
 .moderation-link:hover { border-color: #009c7d; }
+
+#location-coordinate-fields { display: grid; gap: 10px; min-width: 0; }
+#location-coordinate-fields[hidden], #location-map-container[hidden], #location-map-help[hidden] { display: none; }

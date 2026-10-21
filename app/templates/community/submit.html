@@ -1,10 +1,50 @@
-{% extends 'community/base.html' %}{% block content %}
+{% extends 'community/base.html' %}
+{% block title %}{{ 'Contribuir com ' ~ place.name if place else 'Sugerir novo ponto' }} · STM Tour{% endblock %}
+{% block styles %}<link rel="stylesheet" href="{{ url_for('static', filename='css/submit.css') }}">{% endblock %}
+{% block content %}
 <a class="back" href="{{ url_for('community.detail', place_id=place._id) if place else url_for('community.places') }}">← Voltar</a>
-<section class="panel narrow"><h1>{{ 'Contribuir com ' ~ place.name if place else 'Sugerir novo ponto' }}</h1><p>Seu envio ficará privado até a aprovação de um administrador.</p>
-{% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
-<form method="post" enctype="multipart/form-data"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-{% if place %}<label for="kind">Tipo de contribuição</label><select id="kind" name="kind"><option value="photo" {{ 'selected' if request.form.get('kind') == 'photo' }}>Adicionar foto</option><option value="description" {{ 'selected' if request.form.get('kind') == 'description' }}>Sugerir descrição</option></select><small>Preencha o campo correspondente ao tipo escolhido. Envie fotos e descrições separadamente.</small>
-{% else %}<label for="name">Nome do ponto</label><input id="name" name="name" maxlength="120" required value="{{ request.form.get('name', '') }}">{% endif %}
-{% if not place %}{% include 'partials/category_select.html' %}{% include 'partials/location_picker.html' %}{% endif %}<label for="description">Descrição sugerida</label><textarea id="description" name="description" maxlength="5000" rows="6" {{ 'required' if not place }}>{{ request.form.get('description', '') }}</textarea>
-<label for="photo">Foto</label><input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" {{ 'required' if not place }}><small>JPG, PNG ou WebP, até 5 MB e 20 megapixels.</small><button>Enviar para aprovação</button></form></section>
+<section class="panel narrow suggestion-panel">
+  <div class="suggestion-heading">
+    <span class="suggestion-eyebrow">COMUNIDADE STM TOUR</span>
+    <h1>{{ 'Contribuir com ' ~ place.name if place else 'Sugerir novo ponto' }}</h1>
+    <p>{{ 'Compartilhe seu olhar sobre este lugar.' if place else 'Ajude outras pessoas a descobrir os encantos de Santarém.' }}</p>
+  </div>
+  <p class="suggestion-note">Seu envio será analisado pela equipe antes de aparecer no STM Tour.</p>
+  {% if error %}<p class="notice error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <section class="suggestion-section" aria-labelledby="place-info-heading">
+      <h2 id="place-info-heading">{{ 'Sua contribuição' if place else 'Sobre o lugar' }}</h2>
+      {% if place %}
+      <label for="kind">Tipo de contribuição</label>
+      <select id="kind" name="kind"><option value="photo" {{ 'selected' if request.form.get('kind') == 'photo' }}>Adicionar foto</option><option value="description" {{ 'selected' if request.form.get('kind') == 'description' }}>Sugerir descrição</option></select>
+      <small>Preencha o campo correspondente ao tipo escolhido. Envie fotos e descrições separadamente.</small>
+      {% else %}
+      <label for="name">Nome do ponto</label>
+      <input id="name" name="name" maxlength="120" required placeholder="Como esse lugar é conhecido?" value="{{ request.form.get('name', '') }}">
+      {% include 'partials/category_select.html' %}
+      {% endif %}
+      <label for="description">Descrição sugerida</label>
+      <textarea id="description" name="description" maxlength="5000" rows="5" placeholder="Conte o que torna esse lugar especial e o que os visitantes podem encontrar por lá." {{ 'required' if not place }}>{{ request.form.get('description', '') }}</textarea>
+    </section>
+    {% if not place %}{% include 'partials/location_picker.html' %}{% endif %}
+    <section class="suggestion-section suggestion-photo" aria-labelledby="photo-heading">
+      <h2 id="photo-heading">Um olhar sobre o lugar</h2>
+      <p>Mostre o que os visitantes vão encontrar.</p>
+      <div class="photo-upload-area">
+        <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" aria-label="Adicionar foto do ponto" aria-describedby="photo-help photo-selection" {{ 'required' if not place }}>
+        <label for="photo" class="photo-upload-card">
+          <span class="photo-upload-icon" aria-hidden="true"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4H5a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2h13a2 2 0 0 0 2-2v-9M18 2v6m-3-3h6"/><circle cx="8" cy="9" r="1.5"/><path d="m3 17 5-5 4 4 3-3 5 5"/></svg></span>
+          <img id="photo-preview" class="photo-upload-preview" alt="Prévia da foto selecionada" hidden>
+          <strong id="photo-upload-title">Adicione uma foto</strong>
+          <span id="photo-selection" role="status">Toque para selecionar da sua galeria</span>
+          <span class="photo-upload-action" aria-hidden="true">Selecionar foto <span>↑</span></span>
+        </label>
+      </div>
+      <small id="photo-help">JPG, PNG ou WebP · Até 5 MB e 20 megapixels.</small>
+    </section>
+    <div class="suggestion-footer"><button type="submit">Enviar para aprovação <span aria-hidden="true">→</span></button><small>Você pode acompanhar o envio em Minhas contribuições.</small></div>
+  </form>
+</section>
+<script src="{{ url_for('static', filename='js/photo-upload.js') }}" defer></script>
 {% endblock %}
