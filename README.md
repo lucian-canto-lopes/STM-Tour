@@ -29,11 +29,17 @@ Envios pendentes ou rejeitados ficam privados para o autor e os administradores,
 
 As contribuições ficam na coleção `contributions`, com autor, data, estado e registro de quem decidiu. A mudança de estado é atômica e aceita apenas uma decisão por envio; a visualização pública consulta somente contribuições aprovadas. Pontos criados pela comunidade ficam nessa coleção e são acessados na lista pública; os novos pontos aprovados também aparecem em **Locais cadastrados** no painel administrativo, onde podem ser editados e removidos, mantendo sua identificação e autoria enquanto cadastrados.
 
+### Gerenciamento e banimento de usuários
+
+Em **Moderação → Gerenciar usuários**, as contas exibem perfil e situação de acesso. Abra **Gerenciar conta → Banir usuário**, informe o motivo e escolha um bloqueio temporário (1, 3, 7 ou 30 dias) ou permanente. O temporário termina automaticamente; **Remover banimento** permite liberar a conta antes do prazo ou desfazer um bloqueio permanente. Contas administrativas são protegidas contra banimento.
+
+O bloqueio impede novos logins e invalida sessões anteriores, inclusive após a liberação: o usuário precisa entrar novamente. O conteúdo já publicado permanece no sistema e pode ser moderado pelas denúncias. Contas banidas não podem ser promovidas enquanto estiverem bloqueadas. O motivo, o prazo e o administrador responsável ficam registrados em `users.ban`.
+
 ### Denúncias de comentários
 
-Na aba **Avaliações** de um local, usuários conectados podem abrir o menu de **três pontinhos (⋯)** do comentário, escolher **Denunciar comentário**, informar um motivo de até 1.000 caracteres e enviar para análise. O comentário permanece público enquanto a denúncia estiver pendente. Cada usuário pode denunciar uma mesma versão do comentário apenas uma vez.
+Na aba **Avaliações** de um local, usuários conectados podem abrir o menu de **três pontinhos (⋯)** do comentário, escolher **Denunciar** e selecionar um motivo na janela centralizada. Ao escolher **Outros**, aparece um campo obrigatório de até 1.000 caracteres para explicar o motivo antes do envio para análise. O comentário permanece público enquanto a denúncia estiver pendente. Cada usuário pode denunciar uma mesma versão do comentário apenas uma vez.
 
-Em **Moderação → Revisar denúncias**, o administrador consulta o comentário, o motivo e o histórico das decisões. **Aprovar denúncia e ocultar comentário** oculta somente o texto denunciado, preservando a nota; **Rejeitar denúncia** mantém o comentário. Se o autor tiver editado o comentário após a denúncia, a nova versão é preservada. As denúncias ficam na coleção `comment_reports`, com autoria, datas e identificação do administrador responsável pela decisão.
+Em **Moderação → Revisar denúncias**, o administrador consulta as abas **Pendentes** e **Histórico**, com contadores. As pendentes aparecem das mais antigas para as mais recentes, com o motivo e o comentário separados. **Ocultar comentário** aprova a denúncia e oculta somente o texto denunciado, preservando a nota; **Manter comentário** rejeita a denúncia. Se o autor tiver editado o comentário após a denúncia, a nova versão é preservada. As denúncias ficam na coleção `comment_reports`, com autoria, datas e identificação do administrador responsável pela decisão.
 
 O coração abaixo de cada comentário permite curtir e descurtir após entrar na conta. A contagem é pública e cada conta tem uma curtida por comentário, armazenada na coleção `comment_likes`. Comentários ocultados pela moderação não exibem ações de denúncia ou curtida.
 

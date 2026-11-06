@@ -1,27 +1,44 @@
 {% extends 'admin/base.html' %}
 {% block content %}
-<a class="back" href="{{ url_for('admin.moderation') }}">← Voltar à moderação</a>
-<div class="heading">
-  <h1>Usuários</h1>
-  <p>Conceda acesso administrativo às contas cadastradas. Administradores podem gerenciar locais e conceder essa permissão a outros usuários.</p>
+<div class="heading reports-heading">
+  <a class="reports-back" href="{{ url_for('admin.moderation') }}">← Moderação</a>
+  <h1>Gerenciar usuários</h1>
+  <p>Consulte as contas, gerencie permissões e controle o acesso à comunidade.</p>
 </div>
+<div class="users-summary"><span><strong>{{ users|length }}</strong> contas cadastradas</span><span><strong>{{ banned_count }}</strong> banidas</span></div>
 <div class="grid">
   {% for user in users %}
-  <article class="panel">
-    <h2>{{ user.get('name') or user.email }}</h2>
-    <p>{{ user.email }}</p>
-    {% if user.get('role') == 'admin' %}
-    <strong>Administrador</strong>
+  <article class="panel user-card">
+    <div class="user-card-heading"><span class="user-avatar" aria-hidden="true">{{ (user.get('name') or user.email)[:1]|upper }}</span><div><h2>{{ user.get('name') or user.email }}</h2>{% if user.get('name') != user.email %}<p>{{ user.email }}</p>{% endif %}</div></div>
+    <div class="user-badges"><span class="user-role">{{ 'Administrador' if user.get('role') == 'admin' else 'Usuário' }}</span><span class="user-state {{ 'user-state-banned' if user.is_banned else '' }}">{{ ('Banido permanentemente' if user.ban.kind == 'permanent' else 'Banido temporariamente') if user.is_banned else 'Ativo' }}</span></div>
+    {% if user.is_banned %}
+    <div class="user-ban-info"><span class="report-label">Motivo do banimento</span><p>{{ user.ban.reason }}</p>{% if user.ban.kind == 'temporary' %}<small>Termina em {{ user.ban.until.strftime('%d/%m/%Y às %H:%M') }} UTC</small>{% endif %}</div>
+    <form class="user-unban" method="post" action="{{ url_for('admin.unban_user', user_id=user._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary">Remover banimento</button></form>
+    {% elif user.get('role') == 'admin' %}
+    <p class="user-protected">Conta administrativa protegida contra banimento.</p>
     {% else %}
-    <p>Usuário comum</p>
-    <form method="post" action="{{ url_for('admin.promote_user', user_id=user._id) }}">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" aria-label="Tornar {{ user.email }} administrador">Tornar administrador</button>
-    </form>
+    <details class="user-manage"><summary>Gerenciar conta <span aria-hidden="true">⌄</span></summary>
+      <button type="button" class="user-ban-trigger" data-ban-url="{{ url_for('admin.ban_user', user_id=user._id) }}" data-user-name="{{ user.get('name') or user.email }}" data-user-email="{{ user.email }}">Banir usuário</button>
+      <details class="user-promote"><summary>Conceder acesso administrativo</summary><p>Esta conta poderá gerenciar locais, usuários e denúncias.</p>
+        <form method="post" action="{{ url_for('admin.promote_user', user_id=user._id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="secondary" aria-label="Tornar {{ user.email }} administrador">Tornar administrador</button></form>
+      </details>
+    </details>
     {% endif %}
   </article>
-  {% else %}
-  <section class="panel empty"><p>Nenhum usuário cadastrado.</p></section>
-  {% endfor %}
+  {% else %}<section class="panel empty"><p>Nenhum usuário cadastrado.</p></section>{% endfor %}
 </div>
+<dialog class="ban-dialog" aria-labelledby="ban-dialog-title" aria-describedby="ban-dialog-account">
+  <div class="ban-dialog-heading"><h2 id="ban-dialog-title">Banir usuário</h2><button type="button" class="ban-dialog-close" aria-label="Fechar">×</button></div>
+  <div class="ban-dialog-account" id="ban-dialog-account"><strong data-ban-name></strong><span data-ban-email></span></div>
+  <form method="post" class="ban-dialog-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label for="ban-kind-dialog">Tipo de banimento</label><select id="ban-kind-dialog" name="kind" required><option value="temporary">Temporário</option><option value="permanent">Permanente</option></select>
+          <div class="ban-duration"><label for="ban-days-dialog">Duração</label><select id="ban-days-dialog" name="days"><option value="1">1 dia</option><option value="3">3 dias</option><option value="7">7 dias</option><option value="30">30 dias</option></select></div>
+          <label for="ban-reason-dialog">Motivo</label><textarea id="ban-reason-dialog" name="reason" rows="3" maxlength="1000" required placeholder="Explique por que esta conta será banida"></textarea>
+          <small>O acesso à conta será bloqueado e as sessões atuais serão invalidadas.</small>
+          <button class="danger">Confirmar banimento</button>
+        </form>
+  <button type="button" class="secondary ban-dialog-cancel">Cancelar</button>
+</dialog>
+<script src="{{ url_for('static', filename='js/admin-users.js') }}" defer></script>
 {% endblock %}

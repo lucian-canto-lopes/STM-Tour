@@ -12,7 +12,7 @@ def test_like_unlike_and_independent_users(client):
     assert 'class="comment-like" aria-pressed="true"' in page
     assert '<span>1</span><span class="sr-only">curtidas</span>' in page
     assert 'class="comment-menu"' in page
-    assert '</svg>Denunciar</summary>' in page
+    assert '</svg>Denunciar</button>' in page
     assert 'class="comment-like" aria-pressed="false"' in author.get(f'/locais/{place}').text
     post(author, path)
     assert database.comment_likes.count_documents({}) == 2

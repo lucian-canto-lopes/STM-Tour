@@ -19,12 +19,12 @@ def setup_report(client):
 @pytest.mark.parametrize('decision', ['approved', 'rejected'])
 def test_report_moderation(client, decision):
     place, author, reporter, database, path = setup_report(client)
-    assert 'Denunciar comentário' in reporter.get(f'/locais/{place}').text
-    assert post(reporter, path, reason='<script>Motivo</script>', status='approved').status_code == 302
+    assert '</svg>Denunciar</button>' in reporter.get(f'/locais/{place}').text
+    assert post(reporter, path, reason_category='other', reason='<script>Motivo</script>', status='approved').status_code == 302
     report = database.comment_reports.find_one()
     assert report['status'] == 'pending'
     assert 'Comentário denunciado' in client.get(f'/locais/{place}').text
-    assert post(reporter, path, reason='Repetida').status_code == 302
+    assert post(reporter, path, reason_category='other', reason='Repetida').status_code == 302
     assert database.comment_reports.count_documents({}) == 1
     review_path = f'/admin/denuncias/{report["_id"]}/revisar'
     assert reporter.get('/admin/denuncias').status_code == 403
@@ -45,24 +45,65 @@ def test_report_moderation(client, decision):
 def test_report_validation_and_missing_targets(client):
     place, author, reporter, database, path = setup_report(client)
     client.get('/entrar')
-    assert post(client, path, reason='Motivo').location == '/entrar'
+    assert post(client, path, reason_category='other', reason='Motivo').location == '/entrar'
     assert reporter.post(path, data={'reason': 'Motivo'}).status_code == 400
     for reason in ('', '  ', 'x' * 1001):
-        assert post(reporter, path, reason=reason).status_code == 400
-    assert post(reporter, path.replace(place, make_place(client)), reason='Motivo').status_code == 404
-    assert post(reporter, f'/locais/{place}/comentarios/invalid/denunciar', reason='Motivo').status_code == 404
+        assert post(reporter, path, reason_category='other', reason=reason).status_code == 400
+    assert post(reporter, path.replace(place, make_place(client)), reason_category='other', reason='Motivo').status_code == 404
+    assert post(reporter, f'/locais/{place}/comentarios/invalid/denunciar', reason_category='other', reason='Motivo').status_code == 404
     post(author, f'/locais/{place}/avaliar', rating='4', comment='')
-    assert post(reporter, path, reason='Motivo').status_code == 404
+    assert post(reporter, path, reason_category='other', reason='Motivo').status_code == 404
     assert database.comment_reports.count_documents({}) == 0
 
 
 def test_decision_preserves_later_edit(client):
     place, author, reporter, database, path = setup_report(client)
-    post(reporter, path, reason='Motivo')
+    post(reporter, path, reason_category='other', reason='Motivo')
     report = database.comment_reports.find_one()
     post(author, f'/locais/{place}/avaliar', rating='4', comment='Comentário corrigido')
     login(client)
     assert post(client, f'/admin/denuncias/{report["_id"]}/revisar', decision='approved').status_code == 302
     assert 'Comentário corrigido' in client.get(f'/locais/{place}').text
-    post(reporter, path, reason='Novo motivo')
+    post(reporter, path, reason_category='other', reason='Novo motivo')
     assert database.comment_reports.count_documents({}) == 2
+
+
+@pytest.mark.parametrize('category', ['spam', 'offensive', 'hate', 'inappropriate', 'misinformation'])
+def test_predefined_report_reasons(client, category):
+    from app.contributions import REPORT_REASONS
+    place, author, reporter, database, path = setup_report(client)
+    assert post(reporter, path, reason_category=category, reason='Ignorado').status_code == 302
+    report = database.comment_reports.find_one()
+    assert report['reason_category'] == category
+    assert report['reason'] == REPORT_REASONS[category]
+
+
+def test_report_requires_valid_category_and_dialog_markup(client):
+    place, author, reporter, database, path = setup_report(client)
+    for category in ('', 'invalid'):
+        assert post(reporter, path, reason_category=category, reason='Motivo').status_code == 400
+    page = reporter.get(f'/locais/{place}').text
+    assert '<dialog class="report-dialog"' in page
+    assert 'class="report-other" hidden' in page
+    assert 'maxlength="1000" disabled' in page
+    assert 'data-report-url="' + path + '"' in page
+    assert 'value="other" required>Outros' in page
+
+
+def test_report_queue_separates_pending_and_history(client):
+    place, author, reporter, database, path = setup_report(client)
+    post(reporter, path, reason_category='spam')
+    report = database.comment_reports.find_one()
+    login(client)
+    page = client.get('/admin/denuncias').text
+    assert 'Comentário denunciado' in page and 'Aguardando análise' in page
+    assert 'Ocultar comentário</button>' in page and 'Manter comentário</button>' in page
+    assert 'Nenhuma análise concluída' in client.get('/admin/denuncias?status=reviewed').text
+    post(client, f'/admin/denuncias/{report["_id"]}/revisar', decision='rejected')
+    pending = client.get('/admin/denuncias').text
+    assert 'Tudo em dia' in pending
+    assert '<blockquote>' not in pending
+    history = client.get('/admin/denuncias?status=reviewed').text
+    assert 'Denúncia rejeitada' in history and 'Comentário denunciado' in history
+    assert 'class="report-decisions"' not in history
+    assert 'Tudo em dia' in client.get('/admin/denuncias?status=invalid').text

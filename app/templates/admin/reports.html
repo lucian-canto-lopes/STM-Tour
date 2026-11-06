@@ -1,20 +1,33 @@
 {% extends 'admin/base.html' %}
 {% block content %}
-<div class="heading"><h1>Denúncias de comentários</h1><p>Aprovar uma denúncia oculta o comentário e preserva a nota da avaliação.</p></div>
+<div class="heading reports-heading">
+  <a class="reports-back" href="{{ url_for('admin.moderation') }}">← Moderação</a>
+  <h1>Denúncias de comentários</h1>
+  <p>Analise o conteúdo e decida se o comentário deve continuar público.</p>
+</div>
+<nav class="report-filters" aria-label="Filtrar denúncias">
+  <a href="{{ url_for('community.report_queue') }}" {% if status == 'pending' %}aria-current="page"{% endif %}>Pendentes <span>{{ pending_count }}</span></a>
+  <a href="{{ url_for('community.report_queue', status='reviewed') }}" {% if status == 'reviewed' %}aria-current="page"{% endif %}>Histórico <span>{{ reviewed_count }}</span></a>
+</nav>
+{% if status == 'pending' and items %}<p class="reports-order">Mais antigas primeiro · A nota da avaliação será preservada.</p>{% endif %}
+<div class="reports-list">
 {% for item in items %}
-<article class="panel">
+<article class="panel report-card">
+  <div class="report-card-top"><span class="report-status report-status-{{ item.status }}">{{ {'pending': 'Aguardando análise', 'approved': 'Denúncia aprovada', 'rejected': 'Denúncia rejeitada'}[item.status] }}</span>{% if item.created_at %}<time datetime="{{ item.created_at.isoformat() }}">{{ item.created_at.strftime('%d/%m/%Y') }}</time>{% endif %}</div>
   <h2>{{ item.place_name }}</h2>
-  <p><strong>Autor do comentário:</strong> {{ item.comment_author }}</p>
-  <blockquote>{{ item.comment }}</blockquote>
-  <p><strong>Motivo da denúncia:</strong> {{ item.reason }}</p>
-  <p><strong>Situação:</strong> {{ {'pending': 'Pendente', 'approved': 'Aprovada', 'rejected': 'Rejeitada'}[item.status] }}</p>
+  <div class="report-reason"><span class="report-label">Motivo da denúncia</span><p>{{ item.reason }}</p></div>
+  <div class="report-content"><span class="report-label">Comentário denunciado</span><blockquote>{{ item.comment }}</blockquote><p class="report-author">Por <strong>{{ item.comment_author }}</strong></p></div>
   {% if item.status == 'pending' %}
-  <form method="post" action="{{ url_for('community.review_report', report_id=item._id) }}">
+  <form class="report-decisions" method="post" action="{{ url_for('community.review_report', report_id=item._id) }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button name="decision" value="approved">Aprovar denúncia e ocultar comentário</button>
-    <button class="secondary" name="decision" value="rejected">Rejeitar denúncia</button>
+    <button class="report-hide" name="decision" value="approved">Ocultar comentário</button>
+    <button class="secondary" name="decision" value="rejected">Manter comentário</button>
   </form>
-  {% endif %}
+  <p class="report-decision-help">Ocultar aprova a denúncia. Manter rejeita a denúncia.</p>
+  {% elif item.reviewed_at %}<p class="report-reviewed">Analisada em {{ item.reviewed_at.strftime('%d/%m/%Y') }}</p>{% endif %}
 </article>
-{% else %}<p class="panel">Nenhuma denúncia recebida.</p>{% endfor %}
+{% else %}
+<div class="panel reports-empty"><span aria-hidden="true">✓</span><h2>{{ 'Tudo em dia' if status == 'pending' else 'Nenhuma análise concluída' }}</h2><p>{{ 'Não há denúncias aguardando análise.' if status == 'pending' else 'As denúncias analisadas aparecerão aqui.' }}</p></div>
+{% endfor %}
+</div>
 {% endblock %}

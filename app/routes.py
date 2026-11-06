@@ -9,7 +9,7 @@ from flask import Blueprint, abort, current_app, jsonify, redirect, render_templ
 from pymongo.errors import PyMongoError, DuplicateKeyError
 from werkzeug.security import check_password_hash, generate_password_hash
 from app.admin import protect_forms, read_photo
-from app.auth import current_user, is_admin
+from app.auth import current_user, is_admin, is_banned
 
 main = Blueprint("main", __name__)
 
@@ -131,8 +131,12 @@ def login():
             source = "admins"
             user = database.admins.find_one({"email": email})
         if user and check_password_hash(user["password_hash"], request.form.get("password", "")):
+            if is_banned(user):
+                return render_template('user_auth.html', register=False,
+                                       error='Sua conta está banida. Entre em contato com a administração.'), 403
             session.clear()
-            session.update(user_id=str(user["_id"]), user_name=user.get("name") or user["email"], account_source=source)
+            session.update(user_id=str(user["_id"]), user_name=user.get("name") or user["email"],
+                           account_source=source, auth_version=user.get('auth_version', 0))
             session.permanent = True
             return redirect(url_for("admin.index" if source == "admins" or is_admin(user) else "main.map_view"))
         return render_template("user_auth.html", register=False, error="E-mail ou senha inválidos."), 401

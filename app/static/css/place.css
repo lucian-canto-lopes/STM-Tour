@@ -21,7 +21,7 @@
 .comment-menu>summary::-webkit-details-marker{display:none}
 .comment-menu>summary:hover,.comment-menu[open]>summary{background:#edf5f0}
 .comment-menu>summary:focus-visible,.comment-like:focus-visible{outline:2px solid #00775f;outline-offset:3px}
-.comment-menu-panel{position:absolute;right:0;top:42px;z-index:5;width:min(290px,calc(100vw - 80px));padding:14px;background:#fff;border:1px solid #dce7e1;border-radius:12px;box-shadow:0 8px 24px #163e2926}
+.comment-menu-panel{position:absolute;right:0;top:42px;z-index:5;width:min(200px,calc(100vw - 80px));margin:0;padding:6px;list-style:none;background:#fff;border:1px solid #dce7e1;border-radius:12px;box-shadow:0 8px 24px #163e2926}
 .comment-report>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;color:#a63434;font-size:13px;font-weight:600;padding:8px 0}
 .comment-report form{display:grid;gap:10px;margin-top:12px}
 .comment-report label,.comment-report small{font-size:12px}
@@ -35,5 +35,35 @@
 .comment-like[aria-pressed=true] svg{fill:currentColor}
 
 .comment-report>summary::-webkit-details-marker{display:none}
-.comment-report>summary svg,.comment-menu-panel>.text-link svg{width:18px;height:18px;flex-shrink:0}
-.comment-menu-panel>.text-link{display:flex;align-items:center;gap:8px;color:#a63434}
+.comment-report>summary svg,.comment-menu-panel>li>.text-link svg{width:18px;height:18px;flex-shrink:0}
+.comment-menu-panel>li>.text-link{display:flex;align-items:center;gap:8px;color:#a63434}
+
+.review-editor>summary{display:flex;align-items:center;justify-content:center;min-height:44px;padding:12px 18px;border-radius:10px;background:#009c7d;color:#fff;font-size:14px;font-weight:700;cursor:pointer;list-style:none}
+.review-editor>summary::-webkit-details-marker{display:none}
+.review-editor>summary:hover{background:#008269}
+.review-editor>summary:focus-visible{outline:2px solid #00775f;outline-offset:3px}
+
+.report-list-form{display:grid;gap:14px;max-height:55dvh;overflow-y:auto}
+.report-list-form fieldset{display:grid;gap:0;min-width:0;margin:0;padding:0;border:0}
+.report-list-form legend{font-size:12px;font-weight:700;margin-bottom:4px}
+.report-list-form .report-option{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #edf2ee;font-size:13px;cursor:pointer}
+.report-list-form .report-option input{flex-shrink:0;width:18px;height:18px;margin:0;padding:0;accent-color:#009c7d}
+.report-other label{display:block;margin-bottom:8px;font-size:13px;font-weight:700}
+.report-other textarea{box-sizing:border-box;width:100%;resize:vertical}
+.report-other[hidden]{display:none}
+.report-list-form>small{font-size:12px;color:#63786c}
+.report-list-form>button{width:100%}
+
+.place-detail .report-trigger{display:flex;align-items:center;gap:8px;width:100%;padding:10px 12px;border:0;border-radius:6px;background:transparent;color:#a63434;box-shadow:none;font-size:13px;text-align:left}
+.report-trigger svg{width:18px;height:18px;flex-shrink:0}
+.report-dialog{position:fixed;inset:0;margin:auto;width:calc(100% - 32px);max-width:420px;max-height:calc(100dvh - 48px);overflow-y:auto;box-sizing:border-box;padding:24px;border:1px solid #dce7e1;border-radius:18px;background:#fff;color:#233f32;box-shadow:0 20px 60px #102c3333}
+.report-dialog::backdrop{background:#102c3380}
+.report-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.report-dialog-heading h2{margin:0;font-size:20px}
+.report-dialog .report-close{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;min-height:0;padding:0;border:0;background:transparent;color:#52695d;font-size:26px}
+.report-dialog>p{font-size:13px;line-height:1.6;margin:12px 0}
+.report-dialog .report-list-form{max-height:none;overflow:visible}
+
+.comment-menu-panel>li{margin:0;padding:0}
+.comment-menu-panel>li>.text-link{padding:10px 12px;border-radius:6px}
+.place-detail .report-trigger:hover,.comment-menu-panel>li>.text-link:hover{background:#fff2f2}

@@ -161,3 +161,31 @@ def test_place_tabs_default_and_form_errors(client):
     invalid_review = post(user, f'/locais/{key}/avaliar', rating='6')
     assert invalid_review.status_code == 400
     assert Panels(invalid_review.text).visible == ['avaliacoes']
+
+
+def test_existing_review_editor_collapsed_and_opens_on_validation_error(client):
+    from html.parser import HTMLParser
+
+    class Editor(HTMLParser):
+        def __init__(self, html):
+            super().__init__()
+            self.states = []
+            self.feed(html)
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if tag == 'details' and attrs.get('class') == 'review-editor':
+                self.states.append('open' in attrs)
+
+    key = make_place(client)
+    user = member(client)
+    assert Editor(user.get(f'/locais/{key}').text).states == []
+    post(user, f'/locais/{key}/avaliar', rating='4.5', comment='Minha visita')
+    page = user.get(f'/locais/{key}').text
+    assert Editor(page).states == [False]
+    assert '<summary>Atualizar avaliação</summary>' in page
+    assert 'Minha visita</textarea>' in page
+    invalid = post(user, f'/locais/{key}/avaliar', rating='6', comment='Correção')
+    assert invalid.status_code == 400
+    assert Editor(invalid.text).states == [True]
+    assert 'Correção</textarea>' in invalid.text

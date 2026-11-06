@@ -1,6 +1,7 @@
 import hmac
 import io
 import secrets
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 
 import click
@@ -9,7 +10,7 @@ from flask import Blueprint, abort, current_app, flash, redirect, render_templat
 from PIL import Image, UnidentifiedImageError
 from pymongo.errors import PyMongoError
 from werkzeug.security import generate_password_hash
-from app.auth import current_user, is_admin
+from app.auth import current_user, is_admin, is_banned
 from app.location import coordinates
 from app.place_filters import categories, read_category, category_of, save_category
 
@@ -84,8 +85,11 @@ def index():
 @admin.get('/usuarios')
 @login_required
 def users():
-    accounts = list(db().users.find({}, {'name': 1, 'email': 1, 'role': 1}).sort('email', 1))
-    return render_template('admin/users.html', users=accounts)
+    accounts = list(db().users.find({}, {'name': 1, 'email': 1, 'role': 1, 'ban': 1}).sort('email', 1))
+    for account in accounts:
+        account['is_banned'] = is_banned(account)
+    return render_template('admin/users.html', users=accounts,
+                           banned_count=sum(account['is_banned'] for account in accounts))
 
 
 @admin.get('/moderacao')
@@ -99,10 +103,53 @@ def moderation():
 def promote_user(user_id):
     if not ObjectId.is_valid(user_id):
         abort(404)
+    if is_banned(db().users.find_one({'_id': ObjectId(user_id)})):
+        abort(409, description='Remova o banimento antes de promover esta conta.')
     result = db().users.update_one({'_id': ObjectId(user_id)}, {'$set': {'role': 'admin'}})
     if not result.matched_count:
         abort(404)
     flash('Permissão de administrador concedida.' if result.modified_count else 'Esta conta já é administradora.', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin.post('/usuarios/<user_id>/banir')
+@login_required
+def ban_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        abort(404)
+    account = db().users.find_one({'_id': ObjectId(user_id)})
+    if not account:
+        abort(404)
+    if is_admin(account) or account['_id'] == current_user()['_id']:
+        abort(403, description='Contas administrativas não podem ser banidas.')
+    kind = request.form.get('kind')
+    reason = request.form.get('reason', '').strip()
+    if kind not in ('temporary', 'permanent') or not reason or len(reason) > 1000:
+        abort(400, description='Selecione o tipo de banimento e informe um motivo de até 1.000 caracteres.')
+    ban = {'kind': kind, 'reason': reason, 'created_at': datetime.now(timezone.utc),
+           'reviewer_id': current_user()['_id']}
+    if kind == 'temporary':
+        days = request.form.get('days', '')
+        if days not in ('1', '3', '7', '30'):
+            abort(400, description='Selecione uma duração válida.')
+        ban['until'] = datetime.now(timezone.utc) + timedelta(days=int(days))
+    result = db().users.update_one({'_id': account['_id'], 'role': {'$ne': 'admin'}},
+                                  {'$set': {'ban': ban}, '$inc': {'auth_version': 1}})
+    if not result.matched_count:
+        abort(409)
+    flash('Usuário banido. As sessões anteriores foram invalidadas.', 'success')
+    return redirect(url_for('admin.users'))
+
+
+@admin.post('/usuarios/<user_id>/desbanir')
+@login_required
+def unban_user(user_id):
+    if not ObjectId.is_valid(user_id):
+        abort(404)
+    result = db().users.update_one({'_id': ObjectId(user_id)}, {'$unset': {'ban': ''}})
+    if not result.matched_count:
+        abort(404)
+    flash('Banimento removido. O usuário pode entrar novamente.', 'success')
     return redirect(url_for('admin.users'))
 
 

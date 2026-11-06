@@ -127,3 +127,41 @@ select { width: 100%; padding: 12px; border: 1px solid #cad5d1; border-radius: 8
 
 #location-coordinate-fields { display: grid; gap: 10px; min-width: 0; }
 #location-coordinate-fields[hidden], #location-map-container[hidden], #location-map-help[hidden] { display: none; }
+
+.reports-heading{gap:10px}.reports-heading h1{margin:0;font-size:23px}.reports-back{font-size:12px;font-weight:700;justify-self:start;padding:4px 0 10px}
+.report-filters{display:flex;gap:4px;padding:4px;margin-bottom:16px;border:1px solid #dce7e1;border-radius:12px;background:#e9f0ec}
+.report-filters a{display:flex;flex:1;align-items:center;justify-content:center;gap:8px;min-height:42px;padding:8px;font-size:13px;font-weight:700;color:#52695d;border-radius:9px}
+.report-filters a[aria-current=page]{background:#fff;color:#00775f;box-shadow:0 1px 4px #173a2412}
+.report-filters span{padding:2px 7px;border-radius:12px;background:#e7f2ec;font-size:11px}
+.reports-order{margin:0 0 14px;font-size:11px;color:#63786c}
+.reports-list{display:grid;gap:16px}.report-card{padding:18px;min-width:0}
+.report-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+.report-card-top time{flex-shrink:0;font-size:11px;color:#6b7d73}
+.report-status{display:inline-block;padding:5px 8px;border-radius:6px;font-size:10px;font-weight:700;line-height:1.4}
+.report-status-pending{background:#fff3d7;color:#875c0a}.report-status-approved{background:#fdebed;color:#9d3442}.report-status-rejected{background:#e7f3ed;color:#246447}
+.report-card h2{font-size:17px;margin:0 0 18px}.report-label{display:block;font-size:11px;font-weight:700;color:#63786c}
+.report-reason{margin-bottom:16px}.report-reason p{margin:5px 0 0;color:#233f32;font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
+.report-content{padding:14px;border:1px solid #e3ebe6;border-radius:10px;background:#f7faf8}
+.report-content blockquote{margin:10px 0 12px;font-size:14px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;color:#233f32}
+.report-content .report-author{margin:0;font-size:11px;color:#63786c}.report-author strong{font-weight:600;color:#3d584a}
+.report-decisions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px}.report-decisions button{min-width:0;min-height:46px;padding:10px 6px;font-size:12px;border-radius:9px;line-height:1.4}
+.report-decisions .report-hide{background:#b53b49}.report-hide:hover{background:#9b2e3b}
+.report-decision-help{margin:10px 0 0;font-size:10px;line-height:1.6;color:#63786c}.report-reviewed{margin:14px 0 0;font-size:11px}
+.reports-empty{text-align:center;padding:32px 20px}.reports-empty>span{display:grid;place-items:center;width:42px;height:42px;margin:0 auto 16px;border-radius:50%;background:#e7f3ed;color:#00775f;font-size:22px}.reports-empty h2{font-size:17px}.reports-empty p{margin:0;font-size:13px}
+
+.users-summary{display:flex;justify-content:space-between;gap:12px;margin-bottom:18px;padding:14px;border:1px solid #dce7e1;border-radius:12px;background:#fff;font-size:12px;color:#63786c}.users-summary strong{color:#233f32}
+.user-card{padding:18px}.user-card-heading{display:flex;align-items:center;gap:12px}.user-card-heading>div{min-width:0}.user-card-heading h2{font-size:16px;margin:0}.user-card-heading p{margin:5px 0 0;font-size:12px}
+.user-avatar{display:grid;place-items:center;flex-shrink:0;width:40px;height:40px;border-radius:50%;background:#e7f2ec;color:#00775f;font-weight:700}
+.user-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.user-role,.user-state{padding:5px 8px;border-radius:6px;font-size:10px;font-weight:700}.user-role{background:#f0f3f1;color:#52695d}.user-state{background:#e7f3ed;color:#246447}.user-state-banned{background:#fdebed;color:#9d3442}
+.user-manage{margin-top:18px;border-top:1px solid #e3ebe6;padding-top:12px}.user-manage>summary{display:flex;justify-content:space-between;list-style:none;color:#00775f;font-size:13px;font-weight:700;padding:8px 0;cursor:pointer}.user-manage>summary::-webkit-details-marker{display:none}
+.user-promote{margin-top:12px;padding:12px;border:1px solid #e3ebe6;border-radius:10px}.user-promote>summary{font-size:12px;cursor:pointer;font-weight:700;line-height:1.5}.user-promote>summary{color:#52695d}.user-promote p{font-size:12px}.user-promote button,.user-unban button{width:100%}
+.ban-dialog-form{display:grid;gap:10px;margin-top:16px}.ban-dialog-form label{font-size:12px;font-weight:700}.ban-duration{display:grid;gap:10px}.ban-duration[hidden]{display:none}.ban-dialog-form select,.ban-dialog-form textarea{font-size:14px}.ban-dialog-form small{font-size:11px;line-height:1.6}
+.user-ban-info{margin-top:16px;padding:12px;background:#fff6f6;border-radius:10px}.user-ban-info p{margin:5px 0;font-size:13px;white-space:pre-wrap}.user-ban-info small{font-size:11px}.user-unban{margin-top:16px}.user-protected{margin:14px 0 0;font-size:11px;color:#63786c}
+
+.user-ban-trigger{width:100%;justify-content:flex-start;min-height:44px;margin-top:12px;padding:10px 12px;border:1px solid #e3bbc0;background:#fff;color:#a52b35;font-size:12px}
+.ban-dialog{position:fixed;inset:0;margin:auto;width:calc(100% - 32px);max-width:420px;max-height:calc(100dvh - 48px);overflow-y:auto;padding:24px;border:1px solid #dce7e1;border-radius:18px;background:white;color:#233f32;box-shadow:0 20px 60px #102c3333}
+.ban-dialog::backdrop{background:#102c3380}
+.ban-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px}.ban-dialog-heading h2{margin:0;font-size:20px}
+.ban-dialog .ban-dialog-close{display:grid;place-items:center;flex-shrink:0;width:36px;height:36px;min-height:0;padding:0;border:0;background:transparent;color:#52695d;font-size:26px}
+.ban-dialog-account{display:grid;gap:5px;margin:16px 0;padding:12px;border-radius:10px;background:#f2f6f4;overflow-wrap:anywhere}.ban-dialog-account strong{font-size:14px}.ban-dialog-account span{font-size:12px;color:#63786c}
+.ban-dialog-form>button,.ban-dialog-cancel{width:100%}.ban-dialog-cancel{margin-top:10px}

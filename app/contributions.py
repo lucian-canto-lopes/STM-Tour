@@ -15,10 +15,19 @@ from app.place_filters import read_category, save_category
 community = Blueprint('community', __name__)
 community.before_request(protect_forms)
 
+REPORT_REASONS = {
+    'spam': 'Spam ou propaganda',
+    'offensive': 'Ofensas ou assédio',
+    'hate': 'Discurso de ódio ou discriminação',
+    'inappropriate': 'Conteúdo impróprio ou violento',
+    'misinformation': 'Informações falsas ou enganosas',
+    'other': 'Outros',
+}
+
 
 @community.app_context_processor
 def template_helpers():
-    return {'current_user': current_user}
+    return {'current_user': current_user, 'report_reasons': REPORT_REASONS}
 
 
 def signed_in(view):
@@ -258,9 +267,14 @@ def report_comment(place_id, review_id):
     review = db().place_reviews.find_one({'_id': object_id(review_id), 'place_id': place['_id']})
     if not review or not review.get('comment') or review.get('comment_hidden'):
         abort(404)
-    reason = request.form.get('reason', '').strip()
-    if not reason or len(reason) > 1000:
-        abort(400, description='Informe o motivo da denúncia com até 1.000 caracteres.')
+    category = request.form.get('reason_category')
+    if category not in REPORT_REASONS:
+        abort(400, description='Selecione um motivo válido para a denúncia.')
+    reason = REPORT_REASONS[category]
+    if category == 'other':
+        reason = request.form.get('reason', '').strip()
+        if not reason or len(reason) > 1000:
+            abort(400, description='Descreva o motivo da denúncia com até 1.000 caracteres.')
     target = {'review_id': review['_id'], **identity(), 'review_updated_at': review['updated_at']}
     collection = db().comment_reports
     collection.create_index([('review_id', 1), ('author_id', 1), ('author_source', 1),
@@ -268,7 +282,7 @@ def report_comment(place_id, review_id):
     result = collection.update_one(target, {'$setOnInsert': {
         'place_id': place['_id'], 'place_name': place['name'],
         'comment': review['comment'], 'comment_author': review.get('author_name', 'Explorador'),
-        'reason': reason, 'status': 'pending', 'created_at': datetime.now(timezone.utc),
+        'reason': reason, 'reason_category': category, 'status': 'pending', 'created_at': datetime.now(timezone.utc),
     }}, upsert=True)
     flash('Denúncia enviada para análise do administrador.' if result.upserted_id
           else 'Você já denunciou esta versão do comentário.')
@@ -278,8 +292,15 @@ def report_comment(place_id, review_id):
 @community.get('/admin/denuncias')
 @login_required
 def report_queue():
-    items = list(db().comment_reports.find().sort('created_at', -1))
-    return render_template('admin/reports.html', items=items)
+    status = request.args.get('status', 'pending')
+    if status not in ('pending', 'reviewed'):
+        status = 'pending'
+    collection = db().comment_reports
+    query = {'status': 'pending'} if status == 'pending' else {'status': {'$in': ['approved', 'rejected']}}
+    items = list(collection.find(query).sort('created_at', 1 if status == 'pending' else -1))
+    return render_template('admin/reports.html', items=items, status=status,
+                           pending_count=collection.count_documents({'status': 'pending'}),
+                           reviewed_count=collection.count_documents({'status': {'$in': ['approved', 'rejected']}}))
 
 
 @community.post('/admin/denuncias/<report_id>/revisar')
