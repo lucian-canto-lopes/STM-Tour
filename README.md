@@ -3,6 +3,10 @@ Projeto criado para a disciplina Laboratório de desenvolvimento de software
 
 A página `/mapa`, aberta após o login do usuário, exibe um mapa interativo de Santarém gerado com Folium e OpenStreetMap. É possível arrastar o mapa e usar os controles de zoom ou o gesto de pinça. Os mapas e recursos do Leaflet precisam de conexão com a internet. Após atualizar as dependências, reconstrua o serviço com `docker compose up -d --build`.
 
+## Banco de dados no Railway
+
+Configure `MONGO_URI` com a conexão do serviço MongoDB. Quando a URL inclui um nome de banco (por exemplo, `/stm_tour?authSource=admin`), esse nome é preservado. Quando a URL não inclui um banco, o sistema usa `MONGO_DB_NAME`, cujo padrão é `stm_tour`. Configure essa variável com o nome do banco que contém os dados existentes. O parâmetro `authSource` identifica o banco de autenticação e não substitui o banco da aplicação. Após publicar esta alteração ou atualizar as variáveis, faça um novo deploy.
+
 ## Painel do administrador
 
 1. Configure o `.env` usando `.env.example` e defina `SECRET_KEY` com uma chave aleatória longa (por exemplo, `openssl rand -hex 32`). Em HTTPS, use `SESSION_COOKIE_SECURE=true`.

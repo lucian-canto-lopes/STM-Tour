@@ -11,6 +11,7 @@ def create_app() -> Flask:
     app.config.from_mapping(
         SECRET_KEY=os.getenv("SECRET_KEY") or secrets.token_hex(32),
         MONGO_URI=os.getenv("MONGO_URI", "mongodb://mongo:27017/stm_tour"),
+        MONGO_DB_NAME=os.getenv("MONGO_DB_NAME") or "stm_tour",
     )
 
     app.config.update(
@@ -23,7 +24,7 @@ def create_app() -> Flask:
 
     mongo_client = MongoClient(app.config["MONGO_URI"], serverSelectionTimeoutMS=5000)
     app.extensions["mongo_client"] = mongo_client
-    app.extensions["mongo_db"] = mongo_client.get_database()
+    app.extensions["mongo_db"] = mongo_client.get_default_database(default=app.config["MONGO_DB_NAME"])
 
     from app.routes import main
 
