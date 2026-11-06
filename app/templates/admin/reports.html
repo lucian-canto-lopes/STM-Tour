@@ -1,0 +1,20 @@
+{% extends 'admin/base.html' %}
+{% block content %}
+<div class="heading"><h1>Denúncias de comentários</h1><p>Aprovar uma denúncia oculta o comentário e preserva a nota da avaliação.</p></div>
+{% for item in items %}
+<article class="panel">
+  <h2>{{ item.place_name }}</h2>
+  <p><strong>Autor do comentário:</strong> {{ item.comment_author }}</p>
+  <blockquote>{{ item.comment }}</blockquote>
+  <p><strong>Motivo da denúncia:</strong> {{ item.reason }}</p>
+  <p><strong>Situação:</strong> {{ {'pending': 'Pendente', 'approved': 'Aprovada', 'rejected': 'Rejeitada'}[item.status] }}</p>
+  {% if item.status == 'pending' %}
+  <form method="post" action="{{ url_for('community.review_report', report_id=item._id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button name="decision" value="approved">Aprovar denúncia e ocultar comentário</button>
+    <button class="secondary" name="decision" value="rejected">Rejeitar denúncia</button>
+  </form>
+  {% endif %}
+</article>
+{% else %}<p class="panel">Nenhuma denúncia recebida.</p>{% endfor %}
+{% endblock %}

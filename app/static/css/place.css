@@ -11,3 +11,29 @@
 .detail-panel[hidden]{display:none}
 .place-tabs a[aria-selected="true"]{background:#e7f6ef;color:#00775f}
 .detail-panel{touch-action:pan-y}
+
+.visitor-review>.review-heading{align-items:center;gap:10px}
+.review-heading>.review-stars{margin:0 auto 0 0;min-width:0}
+.review-author{margin:4px 0 14px;font-size:12px;color:#63786c;overflow-wrap:anywhere}
+.review-author strong{font-size:12px;font-weight:700;color:#233f32}
+.comment-menu{position:relative;flex-shrink:0}
+.comment-menu>summary{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;cursor:pointer;list-style:none;font-size:25px;color:#52695d}
+.comment-menu>summary::-webkit-details-marker{display:none}
+.comment-menu>summary:hover,.comment-menu[open]>summary{background:#edf5f0}
+.comment-menu>summary:focus-visible,.comment-like:focus-visible{outline:2px solid #00775f;outline-offset:3px}
+.comment-menu-panel{position:absolute;right:0;top:42px;z-index:5;width:min(290px,calc(100vw - 80px));padding:14px;background:#fff;border:1px solid #dce7e1;border-radius:12px;box-shadow:0 8px 24px #163e2926}
+.comment-report>summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;color:#a63434;font-size:13px;font-weight:600;padding:8px 0}
+.comment-report form{display:grid;gap:10px;margin-top:12px}
+.comment-report label,.comment-report small{font-size:12px}
+.comment-report textarea{box-sizing:border-box;width:100%;resize:vertical}
+.visitor-review>.comment-actions{display:flex;justify-content:flex-start;margin-top:12px}
+.comment-actions form{margin:0}
+.place-detail .comment-like{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-width:54px;min-height:36px;padding:6px 4px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#344b40;font-size:13px;cursor:pointer}
+.comment-like svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linejoin:round}
+.place-detail .comment-like:hover{background:transparent;color:#bc3654}
+.place-detail .comment-like[aria-pressed=true]{color:#bc3654;background:transparent}
+.comment-like[aria-pressed=true] svg{fill:currentColor}
+
+.comment-report>summary::-webkit-details-marker{display:none}
+.comment-report>summary svg,.comment-menu-panel>.text-link svg{width:18px;height:18px;flex-shrink:0}
+.comment-menu-panel>.text-link{display:flex;align-items:center;gap:8px;color:#a63434}

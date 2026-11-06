@@ -190,6 +190,16 @@ def render_detail(place, error=None, values=None, photo_error=None):
                        item.get('author_id') == user['_id'] and
                        item.get('author_source') == identity()['author_source']), None)
     average = round(sum(item['rating'] for item in reviews) / len(reviews), 1) if reviews else None
+    likes = {}
+    for like in db().comment_likes.find({'review_id': {'$in': [item['_id'] for item in reviews]}}):
+        count, liked = likes.get(like['review_id'], (0, False))
+        likes[like['review_id']] = (count + 1, liked or bool(user and
+            like.get('user_id') == user['_id'] and
+            like.get('user_source') == favorite_identity()['user_source']))
+    for item in reviews:
+        item['like_count'], item['is_liked'] = likes.get(item['_id'], (0, False))
+        if item.get('comment_hidden'):
+            item['comment'] = ''
     return render_template('community/detail.html', place=place, photos=photos,
                            reviews=reviews, average=average, own_review=own_review,
                            review_values=values if values is not None else (own_review or {}),
@@ -218,11 +228,86 @@ def rate_place(place_id):
     collection.create_index([('place_id', 1), ('author_id', 1), ('author_source', 1)], unique=True)
     collection.update_one({'place_id': place['_id'], **identity()}, {'$set': {
         'rating': rating, 'comment': comment,
+        'comment_hidden': False,
         'author_name': current_user().get('name') or 'Explorador',
         'updated_at': datetime.now(timezone.utc),
     }}, upsert=True)
     flash('Avaliação salva. Obrigado por compartilhar sua experiência!')
     return redirect(url_for('community.detail', place_id=place_id, _anchor='avaliacoes'))
+
+
+@community.post('/locais/<place_id>/comentarios/<review_id>/curtir')
+@signed_in
+def toggle_comment_like(place_id, review_id):
+    place = public_place(place_id)
+    review = db().place_reviews.find_one({'_id': object_id(review_id), 'place_id': place['_id']})
+    if not review or not review.get('comment') or review.get('comment_hidden'):
+        abort(404)
+    collection = db().comment_likes
+    collection.create_index([('review_id', 1), ('user_id', 1), ('user_source', 1)], unique=True)
+    target = {'review_id': review['_id'], **favorite_identity()}
+    if not collection.delete_one(target).deleted_count:
+        collection.update_one(target, {'$setOnInsert': {'created_at': datetime.now(timezone.utc)}}, upsert=True)
+    return redirect(url_for('community.detail', place_id=place_id, _anchor='avaliacoes'))
+
+
+@community.post('/locais/<place_id>/comentarios/<review_id>/denunciar')
+@signed_in
+def report_comment(place_id, review_id):
+    place = public_place(place_id)
+    review = db().place_reviews.find_one({'_id': object_id(review_id), 'place_id': place['_id']})
+    if not review or not review.get('comment') or review.get('comment_hidden'):
+        abort(404)
+    reason = request.form.get('reason', '').strip()
+    if not reason or len(reason) > 1000:
+        abort(400, description='Informe o motivo da denúncia com até 1.000 caracteres.')
+    target = {'review_id': review['_id'], **identity(), 'review_updated_at': review['updated_at']}
+    collection = db().comment_reports
+    collection.create_index([('review_id', 1), ('author_id', 1), ('author_source', 1),
+                             ('review_updated_at', 1)], unique=True)
+    result = collection.update_one(target, {'$setOnInsert': {
+        'place_id': place['_id'], 'place_name': place['name'],
+        'comment': review['comment'], 'comment_author': review.get('author_name', 'Explorador'),
+        'reason': reason, 'status': 'pending', 'created_at': datetime.now(timezone.utc),
+    }}, upsert=True)
+    flash('Denúncia enviada para análise do administrador.' if result.upserted_id
+          else 'Você já denunciou esta versão do comentário.')
+    return redirect(url_for('community.detail', place_id=place_id, _anchor='avaliacoes'))
+
+
+@community.get('/admin/denuncias')
+@login_required
+def report_queue():
+    items = list(db().comment_reports.find().sort('created_at', -1))
+    return render_template('admin/reports.html', items=items)
+
+
+@community.post('/admin/denuncias/<report_id>/revisar')
+@login_required
+def review_report(report_id):
+    decision = request.form.get('decision')
+    if decision not in ('approved', 'rejected'):
+        abort(400)
+    key = object_id(report_id)
+    report = db().comment_reports.find_one({'_id': key})
+    if not report:
+        abort(404)
+    result = db().comment_reports.update_one({'_id': key, 'status': 'pending'}, {'$set': {
+        'status': decision, 'reviewed_at': datetime.now(timezone.utc), 'reviewer': identity(),
+    }})
+    if not result.modified_count:
+        abort(409, description='Esta denúncia já foi revisada.')
+    if decision == 'approved':
+        # A decisão só se aplica à versão denunciada, preservando edições posteriores.
+        hidden = db().place_reviews.update_one({
+            '_id': report['review_id'], 'updated_at': report['review_updated_at'],
+            'comment': report['comment'],
+        }, {'$set': {'comment_hidden': True}})
+        flash('Denúncia aprovada. Comentário ocultado.' if hidden.matched_count else
+              'Denúncia aprovada. O comentário foi alterado ou removido e não foi ocultado.')
+    else:
+        flash('Denúncia rejeitada. Comentário mantido.')
+    return redirect(url_for('community.report_queue'))
 
 
 @community.get('/locais/<place_id>/foto')
