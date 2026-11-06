@@ -9,6 +9,10 @@ Configure `MONGO_URI` com a conexão do serviço MongoDB. Quando a URL inclui um
 
 ## Painel do administrador
 
+No Railway, configure `INITIAL_ADMIN_EMAIL` e `INITIAL_ADMIN_PASSWORD` em **Variables** do serviço da aplicação e faça um novo deploy. A senha deve ter pelo menos 12 caracteres. Na inicialização, a aplicação cria a conta com permissão de administrador e senha armazenada como hash. Sem essas variáveis, não há criação automática. Configuração incompleta ou inválida impede a inicialização com uma mensagem de erro.
+
+Se o e-mail já existir em `users` ou `admins`, a conta é preservada: sua senha e permissão não são alteradas. Reinicializações não redefinem a conta. Após a criação, remova as duas variáveis do Railway; a conta permanece no banco. Entre em `/entrar` com as credenciais configuradas. Não existe senha padrão fixa.
+
 1. Configure o `.env` usando `.env.example` e defina `SECRET_KEY` com uma chave aleatória longa (por exemplo, `openssl rand -hex 32`). Em HTTPS, use `SESSION_COOKIE_SECURE=true`.
 2. Inicie ou reconstrua os serviços: `docker compose up -d --build`.
 3. Crie o administrador: `docker compose exec web flask --app wsgi create-admin`. O comando solicita e-mail e senha (mínimo de 12 caracteres), com confirmação. A senha é armazenada como hash; não existe senha padrão.
